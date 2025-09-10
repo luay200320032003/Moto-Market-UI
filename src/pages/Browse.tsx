@@ -10,6 +10,213 @@ import SearchFilters from "../Components/browse/SearchFilter";
 import MotorcycleGrid from "../Components/browse/MotocycleGrid";
 import MotorcycleList from "../Components/browse/MotocycleList";
 
+// Updated mock data with complete properties
+const mockMotorcycles = [
+  {
+    id: 1,
+    title: "2023 Harley Davidson Street Glide Special",
+    make: "Harley Davidson",
+    model: "Street Glide Special",
+    year: 2023,
+    price: 28500,
+    mileage: 1200,
+    condition: "new" as const,
+    category: "cruiser" as const,
+    engine_size: 1868,
+    fuel_type: "gasoline" as const,
+    color: "Vivid Black",
+    description: "This stunning 2023 Harley Davidson Street Glide Special is in pristine condition with only 1,200 miles. Features include premium audio system, GPS navigation, and custom chrome accessories. Garage kept, never dropped, all maintenance up to date.",
+    location: "Los Angeles, CA",
+    contact_phone: "(555) 123-4567",
+    contact_email: "seller1@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800",
+      "https://images.unsplash.com/photo-1571068316344-75bc76f77890?w=800",
+      "https://images.unsplash.com/photo-1544966503-7cc5ac882d5d?w=800"
+    ],
+    featured: true,
+    seller_name: "Mike Johnson",
+    created_date: "2024-01-01T10:30:00Z",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800"
+  },
+  {
+    id: 2,
+    title: "2022 Yamaha YZF-R1M Track Ready",
+    make: "Yamaha",
+    model: "YZF-R1M",
+    year: 2022,
+    price: 22500,
+    mileage: 3500,
+    condition: "excellent" as const,
+    category: "sport" as const,
+    engine_size: 998,
+    fuel_type: "gasoline" as const,
+    color: "Team Yamaha Blue",
+    description: "Track-focused R1M with carbon fiber bodywork, Öhlins Electronic Racing Suspension, and Bridgestone racing slicks included. Clean title, no accidents, professionally maintained. Perfect for serious track enthusiasts.",
+    location: "New York, NY",
+    contact_phone: "(555) 234-5678",
+    contact_email: "trackrider@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800",
+      "https://images.unsplash.com/photo-1594172825425-e5e34b95d03c?w=800"
+    ],
+    featured: true,
+    seller_name: "Sarah Chen",
+    created_date: "2024-01-02T14:15:00Z",
+    image: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800"
+  },
+  {
+    id: 3,
+    title: "2020 Honda CBR1000RR Fireblade SP",
+    make: "Honda",
+    model: "CBR1000RR Fireblade SP",
+    year: 2020,
+    price: 16800,
+    mileage: 8500,
+    condition: "good" as const,
+    category: "sport" as const,
+    engine_size: 999,
+    fuel_type: "gasoline" as const,
+    color: "Grand Prix Red",
+    description: "Well-maintained CBR1000RR with Öhlins suspension, Marchesini wheels, and Akrapovič exhaust. Recent service completed, new tires, chain and sprockets replaced. Some minor cosmetic wear consistent with age.",
+    location: "Chicago, IL",
+    contact_phone: "(555) 345-6789",
+    contact_email: "honda_rider@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1594172825425-e5e34b95d03c?w=800"
+    ],
+    featured: false,
+    seller_name: "David Rodriguez",
+    created_date: "2023-12-15T09:45:00Z",
+    image: "https://images.unsplash.com/photo-1594172825425-e5e34b95d03c?w=800"
+  },
+  {
+    id: 4,
+    title: "2018 Kawasaki Ninja 400 Beginner Friendly",
+    make: "Kawasaki",
+    model: "Ninja 400",
+    year: 2018,
+    price: 4200,
+    mileage: 15200,
+    condition: "fair" as const,
+    category: "sport" as const,
+    engine_size: 399,
+    fuel_type: "gasoline" as const,
+    color: "Kawasaki Green",
+    description: "Perfect starter bike! Some cosmetic scratches from tip-over in driveway (no damage to engine or frame). Runs great, recent oil change, good tires. Great for new riders looking to learn.",
+    location: "Houston, TX",
+    contact_phone: "(555) 456-7890",
+    contact_email: "first_bike@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1595166297390-3f4a4f8b9d3b?w=800"
+    ],
+    featured: false,
+    seller_name: "Jennifer Smith",
+    created_date: "2023-11-20T16:20:00Z",
+    image: "https://images.unsplash.com/photo-1595166297390-3f4a4f8b9d3b?w=800"
+  },
+  {
+    id: 5,
+    title: "2021 BMW R 1250 GS Adventure Ready",
+    make: "BMW",
+    model: "R 1250 GS",
+    year: 2021,
+    price: 18500,
+    mileage: 12500,
+    condition: "excellent" as const,
+    category: "adventure" as const,
+    engine_size: 1254,
+    fuel_type: "gasoline" as const,
+    color: "Racing Blue Metallic",
+    description: "Adventure-ready GS with BMW premium package, heated grips, GPS navigation, and aluminum panniers. Just completed 12,000-mile service. Includes crash bars, skid plate, and touring windscreen.",
+    location: "Denver, CO",
+    contact_phone: "(555) 567-8901",
+    contact_email: "adventure_rider@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1629792036140-5e3e8f8d9b2e?w=800",
+      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800"
+    ],
+    featured: true,
+    seller_name: "Robert Wilson",
+    created_date: "2024-01-05T11:10:00Z",
+    image: "https://images.unsplash.com/photo-1629792036140-5e3e8f8d9b2e?w=800"
+  },
+  {
+    id: 6,
+    title: "2015 Ducati Monster 821 Dark Edition",
+    make: "Ducati",
+    model: "Monster 821 Dark",
+    year: 2015,
+    price: 7800,
+    mileage: 18500,
+    condition: "good" as const,
+    category: "standard" as const,
+    engine_size: 821,
+    fuel_type: "gasoline" as const,
+    color: "Dark Stealth",
+    description: "Iconic Ducati Monster with L-twin engine, trellis frame, and aggressive styling. Recent Desmo service completed, new clutch plates, and fresh Pirelli tires. Some normal wear but mechanically sound.",
+    location: "Miami, FL",
+    contact_phone: "(555) 678-9012",
+    contact_email: "ducati_lover@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800"
+    ],
+    featured: false,
+    seller_name: "Alessandro Rossi",
+    created_date: "2023-10-01T13:30:00Z",
+    image: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800"
+  },
+  {
+    id: 7,
+    title: "2023 Indian Scout Bobber Twenty",
+    make: "Indian",
+    model: "Scout Bobber Twenty",
+    year: 2023,
+    price: 12500,
+    mileage: 850,
+    condition: "new" as const,
+    category: "cruiser" as const,
+    engine_size: 1133,
+    fuel_type: "gasoline" as const,
+    color: "Thunder Black",
+    description: "Brand new Indian Scout Bobber with blacked-out styling, low-slung profile, and classic bobber aesthetics. Still under warranty, only 850 break-in miles. Includes Indian extended warranty and roadside assistance.",
+    location: "Phoenix, AZ",
+    contact_phone: "(555) 789-0123",
+    contact_email: "indian_scout@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800"
+    ],
+    featured: true,
+    seller_name: "Tom Anderson",
+    created_date: "2024-01-08T08:45:00Z",
+    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800"
+  },
+  {
+    id: 8,
+    title: "2019 KTM 790 Adventure R Off-Road Beast",
+    make: "KTM",
+    model: "790 Adventure R",
+    year: 2019,
+    price: 11200,
+    mileage: 22000,
+    condition: "good" as const,
+    category: "adventure" as const,
+    engine_size: 799,
+    fuel_type: "gasoline" as const,
+    color: "KTM Orange",
+    description: "Serious off-road adventure bike with WP suspension, spoked wheels, and aggressive geometry. Well-used but well-maintained. Includes crash protection, luggage system, and GPS mount. Ready for your next adventure!",
+    location: "Seattle, WA",
+    contact_phone: "(555) 890-1234",
+    contact_email: "ktm_adventure@example.com",
+    image_urls: [
+      "https://images.unsplash.com/photo-1544966503-7cc5ac882d5d?w=800"
+    ],
+    featured: false,
+    seller_name: "Chris Mountain",
+    created_date: "2023-11-15T15:20:00Z",
+    image: "https://images.unsplash.com/photo-1544966503-7cc5ac882d5d?w=800"
+  }
+];
 export default function Browse() {
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState<Motorcycle[]>([]);
@@ -117,6 +324,19 @@ export default function Browse() {
 
     setFilteredMotorcycles(filtered);
   };
+
+ // Load initial data and parse URL params
+  useEffect(() => {
+    // For now, use mock data instead of API call
+    setMotorcycles(mockMotorcycles);
+    parseUrlParams();
+  }, [parseUrlParams]); // parseUrlParams is a dependency since it's a useCallback function.
+
+  // Apply filters when relevant dependencies change
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]); // applyFilters is a dependency since it's a useCallback function.
+
 
 
   const clearFilters = () => {

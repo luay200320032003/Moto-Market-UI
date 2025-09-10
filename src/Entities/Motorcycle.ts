@@ -14,11 +14,11 @@ export interface Motorcycle {
   description?: string; // Detailed description
   location?: string; // City, State
   contact_phone?: string; // Seller contact phone
-  contact_email?: string; // Seller contact email
-  image_urls?: string[]; // Array of image URLs
-  featured?: boolean; // Whether to feature on homepage
-  seller_name?: string; // Name of the seller
-  created_date?: string; // Date created (ISO string)
+  contact_email: string; // Seller contact email
+  image_urls: string[]; // Array of image URLs
+  featured: boolean; // Whether to feature on homepage
+  seller_name: string; // Name of the seller
+  created_date: string; // Date created (ISO string)
   image: string;
 }
 
