@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { createPageUrl } from '../../utils';
 import { MapPin, Gauge, Calendar, Heart } from 'lucide-react';
-import { Button } from '@/Components/ui/button';
-import { Badge } from '@/Components/ui/badge';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
 import { motion } from 'framer-motion';
 
 const cardVariants = {

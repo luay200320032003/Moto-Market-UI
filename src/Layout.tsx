@@ -1,49 +1,59 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl } from "./utils";
 import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogIn, LogOut, Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { User as UserEntity } from "@/entities/User";
+import { Button } from "./Components/ui/button";
+//import { User as UserEntity } from "./Entities/User";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "./Components/ui/dropdown-menu";
 
-export default function Layout({ children, currentPageName }) {
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+interface UserType {
+  full_name?: string;
+  email?: string;
+}
+
+export default function Layout({ children } : LayoutProps) {
   const location = useLocation();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
+  // useEffect(() => {
+  //   checkAuthStatus();
+  // }, []);
 
-  const checkAuthStatus = async () => {
-    try {
-      const currentUser = await UserEntity.me();
-      setUser(currentUser);
-    } catch (error) {
-      // User not logged in
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // const checkAuthStatus = async () => {
+  //   try {
+  //     const currentUser = await UserEntity.me();
+  //     setUser(currentUser);
+  //   } catch (error) {
+  //     // User not logged in
+  //     setUser(null);
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleLogin = () => {
-    UserEntity.login();
+    console.log("Login clicked");
+      setUser(null);
   };
 
   const handleLogout = async () => {
-    await UserEntity.logout();
+     console.log("Logout clicked");
     setUser(null);
   };
 
-  const isActive = (pageName) => {
+  const isActive = (pageName: string) => {
     return location.pathname === createPageUrl(pageName);
   };
 
