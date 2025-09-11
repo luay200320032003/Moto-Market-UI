@@ -226,9 +226,9 @@ export default function Browse() {
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMake, setSelectedMake] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedCondition, setSelectedCondition] = useState("");
+  const [selectedMake, setSelectedMake] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("any");
+  const [selectedCondition, setSelectedCondition] = useState("any");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
   const [yearRange, setYearRange] = useState<[number, number]>([1990, 2024]);
   const [sortBy, setSortBy] = useState("newest");
@@ -378,7 +378,7 @@ export default function Browse() {
               {/* Sort */}
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-40">
-                  <SelectValue />
+                  <SelectValue placeholder="Sort By" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="newest">Newest First</SelectItem>

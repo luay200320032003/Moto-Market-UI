@@ -66,7 +66,7 @@ export default function SearchFilters({
               <SelectValue placeholder="Any Make" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Any Make</SelectItem>
+              <SelectItem value="all">Any Make</SelectItem>
               {makes.map(make => (
                 <SelectItem key={make} value={make}>{make}</SelectItem>
               ))}
@@ -86,7 +86,7 @@ export default function SearchFilters({
               <SelectValue placeholder="Any Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Any Category</SelectItem>
+              <SelectItem value="any">Any Category</SelectItem>
               {categories.map(category => (
                 <SelectItem key={category} value={category}>
                   {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -108,7 +108,7 @@ export default function SearchFilters({
               <SelectValue placeholder="Any Condition" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Any Condition</SelectItem>
+              <SelectItem value="any">Any Condition</SelectItem>
               {conditions.map(condition => (
                 <SelectItem key={condition} value={condition}>
                   {condition.charAt(0).toUpperCase() + condition.slice(1)}
