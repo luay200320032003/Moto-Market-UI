@@ -7,13 +7,12 @@ import Layout from "./Layout";
 function App() {
   return (
     <Router>
-      <Layout>
-        <Routes>
-           <Route path="/" element={<Home />} />
-             <Route path="/Browse" element={<Browse />} />
-            <Route path="*" element={<LandingPage />} />
-        </Routes>
-      </Layout>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="Browse" element={<Browse />} />
+        </Route>
+      </Routes>
     </Router>
   );
 }

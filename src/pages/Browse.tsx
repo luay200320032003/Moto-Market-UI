@@ -325,17 +325,12 @@ export default function Browse() {
     setFilteredMotorcycles(filtered);
   };
 
- // Load initial data and parse URL params
+//  // Load initial data and parse URL params
   useEffect(() => {
     // For now, use mock data instead of API call
     setMotorcycles(mockMotorcycles);
     parseUrlParams();
   }, [parseUrlParams]); // parseUrlParams is a dependency since it's a useCallback function.
-
-  // Apply filters when relevant dependencies change
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]); // applyFilters is a dependency since it's a useCallback function.
 
 
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import HeroSection from "../Components/home/HeroSection";
 
 export default function LandingPage() {
   const [search, setSearch] = useState("");
@@ -18,20 +19,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-20 text-center">
-        <h1 className="text-5xl font-bold mb-4">Find Your Dream Motorcycle</h1>
-        <p className="text-lg mb-6">
-          Browse thousands of listings from trusted dealers across the country.
-        </p>
-        <div className="flex justify-center gap-4">
-          <button className="px-6 py-3 bg-yellow-400 text-black rounded-lg font-semibold hover:bg-yellow-500">
-            Dealer Login
-          </button>
-          <button className="px-6 py-3 bg-white text-indigo-700 rounded-lg font-semibold hover:bg-gray-200">
-            Subscribe as Dealer
-          </button>
-        </div>
-      </section>
+       <HeroSection
+       searchQuery={search}
+       setSearchQuery={setSearch}
+       onSearch={() => {}}
+     />
+ 
 
       {/* Search Bar */}
       <section className="max-w-3xl mx-auto mt-10 px-4">

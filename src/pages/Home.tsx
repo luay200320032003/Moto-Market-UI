@@ -15,6 +15,9 @@ import StatsSection from "../Components/home/StateSection";
 import WhyChooseUs from "../Components/home/WhyChooseUs";
 import BrowseByBrand from "../Components/home/BrowseByBrand";
 
+ 
+ 
+
 export default function Home() {
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
   const [searchQuery, setSearchQuery] = useState("");

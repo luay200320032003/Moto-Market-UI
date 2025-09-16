@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogIn, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./Components/ui/button";
+import { Outlet } from "react-router-dom";
 //import { User as UserEntity } from "./Entities/User";
 import {
   DropdownMenu,
@@ -20,8 +21,20 @@ interface UserType {
   full_name?: string;
   email?: string;
 }
-
-export default function Layout({ children } : LayoutProps) {
+// export default function Layout() {
+//   return (
+//     <div>
+//       <nav>
+//         <Link to="/">Home</Link>
+//         <Link to="/Browse">Buy Motorcycles</Link>
+//       </nav>
+//       <main>
+//         <Outlet />
+//       </main>
+//     </div>
+//   );
+// }
+export default function Layout() {
   const location = useLocation();
   const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,9 +66,13 @@ export default function Layout({ children } : LayoutProps) {
     setUser(null);
   };
 
-  const isActive = (pageName: string) => {
-    return location.pathname === createPageUrl(pageName);
-  };
+const isActive = (pageName: string): boolean => {
+  if (pageName === "Home") {
+    return location.pathname === "/" || location.pathname.toLowerCase() === "/home";
+  }
+  return location.pathname.toLowerCase() === `/${pageName.toLowerCase()}`;
+};
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -119,7 +136,7 @@ export default function Layout({ children } : LayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to={createPageUrl("Home")} className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-2">
               <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-700 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">M</span>
               </div>
@@ -129,7 +146,7 @@ export default function Layout({ children } : LayoutProps) {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
               <Link 
-                to={createPageUrl("Home")}
+                to="/"
                 className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
                   isActive("Home") 
                     ? "bg-red-50 text-red-600" 
@@ -138,8 +155,7 @@ export default function Layout({ children } : LayoutProps) {
               >
                 <Home className="w-4 h-4" />
                 <span>Home</span>
-              </Link>
-              
+              </Link>             
               <Link 
                 to={createPageUrl("Browse")}
                 className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
@@ -293,11 +309,11 @@ export default function Layout({ children } : LayoutProps) {
 
       {/* Main Content */}
       <main className="flex-1">
-        {children}
+           <Outlet /> 
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white">
+      {/* <footer className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div className="col-span-1 md:col-span-2">
@@ -362,7 +378,7 @@ export default function Layout({ children } : LayoutProps) {
             </div>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 }
