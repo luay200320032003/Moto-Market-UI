@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Motorcycle, listMotorcycles } from "../Entities/Motorcycle";
+import { Motorcycle, listMotorcycles } from "../entities/Motorcycle";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Search, ChevronRight, Star, MapPin, Calendar, Gauge } from "lucide-react";
@@ -14,11 +14,12 @@ import CategoryGrid from "../Components/home/CategoryGrid";
 import StatsSection from "../Components/home/StateSection";
 import WhyChooseUs from "../Components/home/WhyChooseUs";
 import BrowseByBrand from "../Components/home/BrowseByBrand";
-
- 
+import { useNavigate } from "react-router-dom";
  
 
 export default function Home() {
+const navigate = useNavigate();
+
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -40,9 +41,9 @@ export default function Home() {
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      window.location.href = createPageUrl(`Browse?search=${encodeURIComponent(searchQuery)}`);
+        navigate(`/Browse?search=${encodeURIComponent(searchQuery)}`);
     } else {
-      window.location.href = createPageUrl("Browse");
+      navigate("/Browse");
     }
   };
 
