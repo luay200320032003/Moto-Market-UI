@@ -13,11 +13,17 @@ import { getMotorcycles } from "../services/motorcycleService";
 export default function Browse() {
   const location = useLocation();
 
+  // States
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
   const [filteredMotorcycles, setFilteredMotorcycles] = useState<Motorcycle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15; // backend default
+  const maxRecords = 70; // avoid hitting rate limits
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,27 +31,33 @@ export default function Browse() {
   const [selectedCategory, setSelectedCategory] = useState("any");
   const [selectedCondition, setSelectedCondition] = useState("any");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
-  const [yearRange, setYearRange] = useState<[number, number]>([1990, 2024]);
+  const [yearRange, setYearRange] = useState<[number, number]>([1990, 2030]);
   const [sortBy, setSortBy] = useState("newest");
 
-// Load motorcycles from API
-useEffect(() => {
-  const fetchMotorcycles = async () => {
-    setIsLoading(true);
-    try {
-      const params = Object.fromEntries(new URLSearchParams(location.search));
-      const bikes = await getMotorcycles(params); //  Motorcycle[]
-      setMotorcycles(bikes);
-    } catch (err) {
-      console.error("Failed to load motorcycles", err);
-      setMotorcycles([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Fetch motorcycles for the current page
+  useEffect(() => {
+    const fetchMotorcycles = async () => {
+      setIsLoading(true);
 
-  fetchMotorcycles();
-}, [location.search])
+      try {
+        const params = Object.fromEntries(new URLSearchParams(location.search));
+        const bikes: Motorcycle[] = await getMotorcycles({ 
+          ...params, 
+          page: currentPage, 
+          pageSize 
+        });
+
+        setMotorcycles(bikes?.slice(0, maxRecords) || []);
+      } catch (err) {
+        console.error("Failed to load motorcycles", err);
+        setMotorcycles([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMotorcycles();
+  }, [location.search, currentPage]);
 
   // Apply filters whenever motorcycles or filter states change
   useEffect(() => {
@@ -220,6 +232,25 @@ useEffect(() => {
           ) : (
             <MotorcycleList motorcycles={filteredMotorcycles} isLoading={isLoading} />
           )}
+
+          {/* Pagination */}
+          <div className="flex justify-center mt-6 space-x-2">
+            <Button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => prev - 1)}
+            >
+              Prev
+            </Button>
+
+            <span className="px-3 py-1 bg-gray-200 rounded">{currentPage}</span>
+
+            <Button
+              disabled={motorcycles.length < pageSize}
+              onClick={() => setCurrentPage((prev) => prev + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
     </div>

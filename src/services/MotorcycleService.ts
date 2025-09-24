@@ -21,7 +21,7 @@ export async function getMotorcycles(searchParams?: Record<string, string | numb
       model: m.build?.model || "Unknown",
       year: m.build?.year || new Date().getFullYear(),
       price: m.price || 0,
-      mileage: m.miles,
+      mileage: m.miles ?? 0,
       condition: "good", // default (API doesn’t provide this field)
       category: "standard", // default (you might want to map based on build/model later)
       engine_size: m.build?.engine_size, // API may not provide
