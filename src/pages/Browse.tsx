@@ -4,7 +4,13 @@ import { useLocation } from "react-router-dom";
 import { Search, Grid, List, SlidersHorizontal } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../Components/ui/select";
 import SearchFilters from "../Components/browse/SearchFilter";
 import MotorcycleGrid from "../Components/browse/MotocycleGrid";
 import MotorcycleList from "../Components/browse/MotocycleList";
@@ -15,15 +21,18 @@ export default function Browse() {
 
   // States
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
-  const [filteredMotorcycles, setFilteredMotorcycles] = useState<Motorcycle[]>([]);
+  const [filteredMotorcycles, setFilteredMotorcycles] = useState<Motorcycle[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 15; // backend default
-  const maxRecords = 70; // avoid hitting rate limits
+  const maxRecords = 70; // backend fetch limit
+  const uiPageSize = 12; // show 10 items per page in UI
+  const fetchPageSize = 50; // backend fetch per API call
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,20 +43,30 @@ export default function Browse() {
   const [yearRange, setYearRange] = useState<[number, number]>([1990, 2030]);
   const [sortBy, setSortBy] = useState("newest");
 
-  // Fetch motorcycles for the current page
+  // Fetch motorcycles from backend (up to maxRecords)
   useEffect(() => {
     const fetchMotorcycles = async () => {
       setIsLoading(true);
 
       try {
         const params = Object.fromEntries(new URLSearchParams(location.search));
-        const bikes: Motorcycle[] = await getMotorcycles({ 
-          ...params, 
-          page: currentPage, 
-          pageSize 
-        });
+        let allBikes: Motorcycle[] = [];
+        let page = 1;
 
-        setMotorcycles(bikes?.slice(0, maxRecords) || []);
+        while (allBikes.length < maxRecords) {
+          const bikes: Motorcycle[] = await getMotorcycles({
+            ...params,
+            page,
+            pageSize: fetchPageSize,
+          });
+          if (!bikes || bikes.length === 0) break;
+
+          allBikes = [...allBikes, ...bikes];
+          if (allBikes.length >= maxRecords) break;
+          page++;
+        }
+
+        setMotorcycles(allBikes.slice(0, maxRecords));
       } catch (err) {
         console.error("Failed to load motorcycles", err);
         setMotorcycles([]);
@@ -57,39 +76,39 @@ export default function Browse() {
     };
 
     fetchMotorcycles();
-  }, [location.search, currentPage]);
+  }, [location.search]);
 
-  // Apply filters whenever motorcycles or filter states change
+  // Apply filters
   useEffect(() => {
     let filtered = [...motorcycles];
 
     if (searchQuery) {
-      filtered = filtered.filter(bike =>
-        bike.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bike.make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bike.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bike.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (bike) =>
+          bike.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          bike.make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          bike.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          bike.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    if (selectedMake !== "all") {
-      filtered = filtered.filter(bike => bike.make === selectedMake);
-    }
+    if (selectedMake !== "all")
+      filtered = filtered.filter((bike) => bike.make === selectedMake);
+    if (selectedCategory !== "any")
+      filtered = filtered.filter((bike) => bike.category === selectedCategory);
+    if (selectedCondition !== "any")
+      filtered = filtered.filter(
+        (bike) => bike.condition === selectedCondition
+      );
 
-    if (selectedCategory !== "any") {
-      filtered = filtered.filter(bike => bike.category === selectedCategory);
-    }
-
-    if (selectedCondition !== "any") {
-      filtered = filtered.filter(bike => bike.condition === selectedCondition);
-    }
-
-    filtered = filtered.filter(bike =>
-      bike.price >= priceRange[0] && bike.price <= priceRange[1] &&
-      bike.year >= yearRange[0] && bike.year <= yearRange[1]
+    filtered = filtered.filter(
+      (bike) =>
+        bike.price >= priceRange[0] &&
+        bike.price <= priceRange[1] &&
+        bike.year >= yearRange[0] &&
+        bike.year <= yearRange[1]
     );
 
-    // Sorting
     switch (sortBy) {
       case "price-low":
         filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
@@ -106,12 +125,26 @@ export default function Browse() {
       case "mileage-low":
         filtered.sort((a, b) => (a.mileage || 0) - (b.mileage || 0));
         break;
-      default: // newest
-        filtered.sort((a, b) => new Date(b.created_date!).getTime() - new Date(a.created_date!).getTime());
+      default:
+        filtered.sort(
+          (a, b) =>
+            new Date(b.created_date!).getTime() -
+            new Date(a.created_date!).getTime()
+        );
     }
 
     setFilteredMotorcycles(filtered);
-  }, [motorcycles, searchQuery, selectedMake, selectedCategory, selectedCondition, priceRange, yearRange, sortBy]);
+    setCurrentPage(1); // reset to first page on filter change
+  }, [
+    motorcycles,
+    searchQuery,
+    selectedMake,
+    selectedCategory,
+    selectedCondition,
+    priceRange,
+    yearRange,
+    sortBy,
+  ]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -123,14 +156,23 @@ export default function Browse() {
     setSortBy("newest");
   };
 
+  // Slice filtered motorcycles for current UI page
+  const startIndex = (currentPage - 1) * uiPageSize;
+  const endIndex = startIndex + uiPageSize;
+  const pagedMotorcycles = filteredMotorcycles.slice(startIndex, endIndex);
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Browse Motorcycles</h1>
-            <p className="text-gray-600">{filteredMotorcycles.length} motorcycles available</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Browse Motorcycles
+            </h1>
+            <p className="text-gray-600">
+              {filteredMotorcycles.length} motorcycles available
+            </p>
           </div>
 
           <div className="flex items-center gap-4">
@@ -163,18 +205,31 @@ export default function Browse() {
 
             {/* View Toggle */}
             <div className="flex border border-gray-300 rounded-lg">
-              <Button variant={viewMode === "grid" ? "default" : "ghost"} size="icon" onClick={() => setViewMode("grid")} className="rounded-r-none">
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="icon"
+                onClick={() => setViewMode("grid")}
+                className="rounded-r-none"
+              >
                 <Grid className="w-4 h-4" />
               </Button>
-              <Button variant={viewMode === "list" ? "default" : "ghost"} size="icon" onClick={() => setViewMode("list")} className="rounded-l-none">
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="icon"
+                onClick={() => setViewMode("list")}
+                className="rounded-l-none"
+              >
                 <List className="w-4 h-4" />
               </Button>
             </div>
 
             {/* Mobile Filters Toggle */}
-            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="md:hidden">
-              <SlidersHorizontal className="w-4 h-4 mr-2" />
-              Filters
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden"
+            >
+              <SlidersHorizontal className="w-4 h-4 mr-2" /> Filters
             </Button>
           </div>
         </div>
@@ -205,7 +260,9 @@ export default function Browse() {
             <div className="p-4">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold">Filters</h2>
-                <Button variant="ghost" onClick={() => setShowFilters(false)}>Close</Button>
+                <Button variant="ghost" onClick={() => setShowFilters(false)}>
+                  Close
+                </Button>
               </div>
               <SearchFilters
                 motorcycles={motorcycles}
@@ -228,9 +285,15 @@ export default function Browse() {
         {/* Results */}
         <div className="flex-1">
           {viewMode === "grid" ? (
-            <MotorcycleGrid motorcycles={filteredMotorcycles} isLoading={isLoading} />
+            <MotorcycleGrid
+              motorcycles={pagedMotorcycles}
+              isLoading={isLoading}
+            />
           ) : (
-            <MotorcycleList motorcycles={filteredMotorcycles} isLoading={isLoading} />
+            <MotorcycleList
+              motorcycles={pagedMotorcycles}
+              isLoading={isLoading}
+            />
           )}
 
           {/* Pagination */}
@@ -242,10 +305,24 @@ export default function Browse() {
               Prev
             </Button>
 
-            <span className="px-3 py-1 bg-gray-200 rounded">{currentPage}</span>
+            {Array.from(
+              { length: Math.ceil(filteredMotorcycles.length / uiPageSize) },
+              (_, i) => (
+                <Button
+                  key={i}
+                  variant={currentPage === i + 1 ? "default" : "outline"}
+                  onClick={() => setCurrentPage(i + 1)}
+                >
+                  {i + 1}
+                </Button>
+              )
+            )}
 
             <Button
-              disabled={motorcycles.length < pageSize}
+              disabled={
+                currentPage ===
+                Math.ceil(filteredMotorcycles.length / uiPageSize)
+              }
               onClick={() => setCurrentPage((prev) => prev + 1)}
             >
               Next
