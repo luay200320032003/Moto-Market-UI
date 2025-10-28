@@ -20,6 +20,7 @@ export interface Motorcycle {
   seller_name: string; // Name of the seller
   created_date: string; // Date created (ISO string)
   image: string;
+  
 }
 
 // Example function to fetch motorcycles (replace with real API call as needed)
