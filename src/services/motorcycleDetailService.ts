@@ -40,3 +40,48 @@ export async function getMotorcycleById(id: string): Promise<Motorcycle> {
     throw error;
   }
 }
+
+interface GetMotorcyclesParams {
+  limit?: number;
+  make?: string;
+  model?: string;
+  year?: number;
+  category?: string;
+}
+
+ export async function getMotorcycles(params: GetMotorcyclesParams = {}): Promise<Motorcycle[]> {
+  try {
+    const response = await API.get("/api/motorcycles", { params });
+    const data = response.data as any[];
+
+    if (!Array.isArray(data)) return [];
+
+    return data.map((m) => ({
+      id: m.id,
+      title: m.heading || "Untitled",
+      make: m.build?.make || "Unknown",
+      model: m.build?.model || "Unknown",
+      year: m.build?.year || new Date().getFullYear(),
+      price: m.price ?? 0,
+      mileage: m.miles ?? 0,
+      condition: "good",
+      category: "standard",
+      engine_size: m.build?.engine_size,
+      fuel_type: "gasoline",
+      color: m.color || "N/A",
+      description: [m.build?.trim, m.color].filter(Boolean).join(" - "),
+      location: m.dealer ? `${m.dealer.city}, ${m.dealer.state}` : undefined,
+      contact_phone: undefined,
+      contact_email: "info@example.com",
+      image_urls: m.media?.photoLinks || [],
+      featured: false,
+      seller_name: m.dealer?.name || "Unknown Dealer",
+      created_date: new Date().toISOString(),
+      image: m.media?.photoLinks?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400",
+    })) as Motorcycle[];
+  } catch (error) {
+    console.error("Error fetching motorcycles:", error);
+    return [];
+  }
+}
+
