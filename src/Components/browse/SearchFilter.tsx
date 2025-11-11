@@ -41,8 +41,12 @@ export default function SearchFilters({
   onClearFilters
 }: SearchFiltersProps) {
   // Get unique values for dropdowns
-  const makes = [...new Set(motorcycles.map(bike => bike.make).filter((make): make is string => typeof make === "string"))].sort();
-  const categories = [...new Set(motorcycles.map(bike => bike.category).filter((category): category is string => typeof category === "string"))].sort();
+ const makes = [...new Set(
+  motorcycles
+    .map(bike => bike.make)
+    .filter((make): make is string => typeof make === "string" && make.trim() !== "")
+)].sort();
+  const categories = [...new Set(motorcycles.map(bike => bike.category).filter((category): category is string => typeof category === "string" && category.trim() !== ""))].sort();
   const conditions = ["new", "excellent", "good", "fair", "poor"];
 
   return (

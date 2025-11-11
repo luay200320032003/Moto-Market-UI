@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Motorcycle } from "../entities/Motorcycle";
-import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
+import { getMotorcycleById, getMotorcycles } from "../services/motorcycleService";
 
 export default function Motocycle() {
   const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
@@ -69,7 +69,9 @@ export default function Motocycle() {
 
   if (!motorcycle)
     return <div className="text-center py-10 text-gray-600">Motorcycle not found.</div>;
-
+  const mainImage = motorcycle.image_urls?.find(
+    (url) => typeof url === "string" && url.trim() !== "" && url.startsWith("http") && !url.includes("youtube.com")
+  );
   return (
     <div className="max-w-6xl mx-auto p-6 bg-gray-50 mt-8 rounded-2xl shadow-sm border border-gray-200">
       {/* Title & Price */}
@@ -84,12 +86,11 @@ export default function Motocycle() {
       </div>
 
       {/* Image and Info */}
-      <div className="grid md:grid-cols-2 gap-8">
-        {/* Main Image */}
+       <div className="grid md:grid-cols-2 gap-8">
         <div>
-          {motorcycle.image_urls?.length ? (
+          {mainImage ? (
             <img
-              src={motorcycle.image_urls[0]}
+              src={mainImage}
               alt={motorcycle.title}
               className="rounded-xl w-full h-[400px] object-cover shadow-md border border-gray-200"
             />

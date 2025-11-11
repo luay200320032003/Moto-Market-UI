@@ -3,6 +3,8 @@ import { Motorcycle } from "../entities/Motorcycle";
 
 interface GetMotorcyclesParams {
   limit?: number;
+  page?: number;
+  pageSize?: number;
   make?: string;
   model?: string;
   year?: number;

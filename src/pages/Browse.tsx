@@ -14,7 +14,7 @@ import {
 import SearchFilters from "../Components/browse/SearchFilter";
 import MotorcycleGrid from "../Components/browse/MotocycleGrid";
 import MotorcycleList from "../Components/browse/MotocycleList";
-import { getMotorcycles } from "../services/MotorcycleService";
+import { getMotorcycles } from "../services/motorcycleService";
 
 export default function Browse() {
   const location = useLocation();
