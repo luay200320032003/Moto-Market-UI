@@ -49,15 +49,13 @@ function mapToMotorcycle(m: any): Motorcycle {
 /**
  * Fetch multiple motorcycles
  */
- export async function getMotorcycles(
+export async function getMotorcycles(
   params: GetMotorcyclesParams = {}
 ): Promise<Motorcycle[]> {
   try {
     const { data }: { data: any } = await API.get("/api/motorcycles", { params });
 
-    const motorcyclesArray: any[] = Array.isArray(data)
-      ? data
-      : (data?.motorcycles ?? data?.results ?? []);
+    const motorcyclesArray: any[] = data?.data ?? [];
 
     return motorcyclesArray.map(mapToMotorcycle);
   } catch (error) {
@@ -65,6 +63,7 @@ function mapToMotorcycle(m: any): Motorcycle {
     return [];
   }
 }
+
 
 
 /**
