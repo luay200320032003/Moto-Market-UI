@@ -9,6 +9,8 @@ interface LoginPayload {
 type AuthResponse = Record<string, unknown>;
 
 const loginEndpoint = import.meta.env.VITE_AUTH_LOGIN_ENDPOINT ?? "/api/auth/login";
+const individualSsoEndpoint =
+  import.meta.env.VITE_AUTH_INDIVIDUAL_SSO_ENDPOINT ?? "/api/auth/sso/individual";
 
 function getNestedValue<T>(source: Record<string, unknown>, key: string): T | undefined {
   const value = source[key];
@@ -48,6 +50,15 @@ export async function login(payload: LoginPayload): Promise<string> {
 
   storeToken(token);
   return token;
+}
+
+export function getIndividualSsoLoginUrl(returnUrl: string): string {
+  const resolvedBase = API.defaults.baseURL ?? window.location.origin;
+  const ssoUrl = new URL(individualSsoEndpoint, resolvedBase);
+
+  ssoUrl.searchParams.set("returnUrl", returnUrl);
+
+  return ssoUrl.toString();
 }
 
 export function logout(): void {

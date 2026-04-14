@@ -33,7 +33,12 @@ export default function Layout() {
 ;
 
   const handleLogin = (accountType: LoginAccountType) => {
-    navigate("/login", { state: { accountType } });
+    const searchParams = new URLSearchParams({
+      accountType,
+      returnTo: `${location.pathname}${location.search}${location.hash}`,
+    });
+
+    navigate(`/login?${searchParams.toString()}`, { state: { accountType } });
   };
 
   const handleLogout = async () => {
