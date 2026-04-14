@@ -21,40 +21,13 @@ interface UserType {
   full_name?: string;
   email?: string;
 }
-// export default function Layout() {
-//   return (
-//     <div>
-//       <nav>
-//         <Link to="/">Home</Link>
-//         <Link to="/Browse">Buy Motorcycles</Link>
-//       </nav>
-//       <main>
-//         <Outlet />
-//       </main>
-//     </div>
-//   );
-// }
+
 export default function Layout() {
   const location = useLocation();
   const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // useEffect(() => {
-  //   checkAuthStatus();
-  // }, []);
-
-  // const checkAuthStatus = async () => {
-  //   try {
-  //     const currentUser = await UserEntity.me();
-  //     setUser(currentUser);
-  //   } catch (error) {
-  //     // User not logged in
-  //     setUser(null);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+;
 
   const handleLogin = () => {
     console.log("Login clicked");
@@ -312,73 +285,7 @@ const isActive = (pageName: string): boolean => {
            <Outlet /> 
       </main>
 
-      {/* Footer */}
-      {/* <footer className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="col-span-1 md:col-span-2">
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-red-600 to-red-700 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">M</span>
-                </div>
-                <span className="text-xl font-bold">MotoTrade</span>
-              </div>
-              <p className="text-gray-400 max-w-md mb-4">
-                The premier destination for buying and selling motorcycles. 
-                Find your perfect ride or sell your bike to passionate riders.
-              </p>
-              <div className="flex space-x-4">
-                <span className="text-gray-400">Follow us:</span>
-                <div className="flex space-x-2">
-                  <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 cursor-pointer transition-colors">
-                    <span className="text-sm">f</span>
-                  </div>
-                  <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 cursor-pointer transition-colors">
-                    <span className="text-sm">t</span>
-                  </div>
-                  <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 cursor-pointer transition-colors">
-                    <span className="text-sm">i</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Buy & Sell</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><Link to={createPageUrl("Browse")} className="hover:text-white transition-colors">Browse Motorcycles</Link></li>
-                <li><Link to={createPageUrl("Sell")} className="hover:text-white transition-colors">Sell Your Bike</Link></li>
-                <li><a href="#" className="hover:text-white transition-colors">Trade-In Value</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Dealer Program</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Support & Services</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Financing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Insurance</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Inspections</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Shipping</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact Us</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-              <p className="text-gray-400 text-sm">
-                &copy; 2024 MotoTrade. All rights reserved.
-              </p>
-              <div className="flex space-x-6 mt-4 md:mt-0">
-                <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
-                <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
-                <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Cookie Policy</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer> */}
+     
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import Browse from "./pages/Browse";
 import Layout from "./Layout";
 import Motorcycle from "./pages/Motocycle";
+import Login from "./pages/Login";
+import Sell from "./pages/Sell";
 
 function App() {
   return (
@@ -13,6 +14,8 @@ function App() {
           <Route index element={<Home />} />
           <Route path="Browse" element={<Browse />} />
           <Route path="/Motorcycle" element={<Motorcycle />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/Sell" element={<Sell />} />
         </Route>
       </Routes>
     </Router>

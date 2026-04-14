@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Motorcycle } from "../entities/Motorcycle";
-import { getMotorcycleById, getMotorcycles } from "../services/motorcycleService";
+import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
 
 export default function Motocycle() {
   const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);

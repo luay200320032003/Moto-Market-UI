@@ -1,20 +1,22 @@
-import axios from 'axios';
+import axios from "axios";
+import { getStoredToken } from "./utils/auth";
 
 const API = axios.create({
- baseURL: import.meta.env.VITE_API_BASE,
-  timeout: 20000, // Set a timeout of 10 seconds
+  baseURL: import.meta.env.VITE_API_BASE,
+  timeout: 20000,
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   },
 });
 
 API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-    console.log("🔐 Using token:", token);
+  const token = getStoredToken();
+
   if (token && config.headers) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
   return config;
 });
 
