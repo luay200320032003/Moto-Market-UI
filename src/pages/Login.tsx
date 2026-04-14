@@ -14,6 +14,9 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const accountType = ((location.state as { accountType?: "individual" | "dealer" } | null)?.accountType ?? "individual");
+  const isDealerLogin = accountType === "dealer";
+
   const redirectTarget = useMemo(() => {
     const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
     return from ?? "/";
@@ -63,10 +66,12 @@ export default function Login() {
         <div className="grid w-full gap-10 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="flex flex-col justify-center text-white">
             <span className="mb-4 inline-flex w-fit items-center rounded-full border border-white/20 bg-white/10 px-4 py-1 text-sm font-medium backdrop-blur">
-              Secure rider access
+              {isDealerLogin ? "Secure dealer access" : "Secure rider access"}
             </span>
             <h1 className="max-w-xl text-4xl font-black tracking-tight sm:text-5xl">
-              Sign in to manage listings, saved bikes, and dealer activity.
+              {isDealerLogin
+                ? "Sign in to manage dealer inventory, listings, and buyer activity."
+                : "Sign in to manage listings, saved bikes, and rider activity."}
             </h1>
             <p className="mt-5 max-w-lg text-lg text-gray-300">
               This page sends your credentials to the .NET backend, stores the returned token in the browser, and lets the rest of the app use it automatically.
@@ -87,7 +92,9 @@ export default function Login() {
                 <ShieldCheck className="h-6 w-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Login</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {isDealerLogin ? "Dealer Login" : "Individual Login"}
+                </h2>
                 <p className="text-sm text-gray-500">Use your backend account credentials.</p>
               </div>
             </div>
@@ -137,7 +144,7 @@ export default function Login() {
                 disabled={isSubmitting}
                 className="h-11 w-full bg-red-600 text-white hover:bg-red-700"
               >
-                {isSubmitting ? "Signing in..." : "Sign in"}
+                {isSubmitting ? "Signing in..." : `Sign in as ${isDealerLogin ? "Dealer" : "Individual"}`}
                 {!isSubmitting && <ArrowRight className="h-4 w-4" />}
               </Button>
             </form>

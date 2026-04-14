@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogIn, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./Components/ui/button";
@@ -22,16 +22,18 @@ interface UserType {
   email?: string;
 }
 
+type LoginAccountType = "individual" | "dealer";
+
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 ;
 
-  const handleLogin = () => {
-    console.log("Login clicked");
-      setUser(null);
+  const handleLogin = (accountType: LoginAccountType) => {
+    navigate("/login", { state: { accountType } });
   };
 
   const handleLogout = async () => {
@@ -58,7 +60,7 @@ const isActive = (pageName: string): boolean => {
               <span className="hidden md:inline">📞 1-800-MOTO-TRADE</span>
             </div>
             <div className="flex items-center space-x-4">
-              {!isLoading && (
+              {isLoading && (
                 <>
                   {user ? (
                     <DropdownMenu>
@@ -86,12 +88,12 @@ const isActive = (pageName: string): boolean => {
                     </DropdownMenu>
                   ) : (
                     <div className="flex items-center space-x-2">
-                      <Button variant="ghost" size="sm" onClick={handleLogin} className="text-white hover:bg-gray-800">
+                      <Button variant="ghost" size="sm" onClick={() => handleLogin("individual")} className="text-white hover:bg-gray-800">
                         <LogIn className="w-4 h-4 mr-2" />
                         Login as Individual
                       </Button>
                       <span className="text-gray-400">|</span>
-                      <Button variant="ghost" size="sm" onClick={handleLogin} className="text-white hover:bg-gray-800">
+                      <Button variant="ghost" size="sm" onClick={() => handleLogin("dealer")} className="text-white hover:bg-gray-800">
                         <LogIn className="w-4 h-4 mr-2" />
                         Login as Dealer
                       </Button>
