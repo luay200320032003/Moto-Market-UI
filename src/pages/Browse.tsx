@@ -25,6 +25,7 @@ export default function Browse() {
     []
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -49,9 +50,12 @@ export default function Browse() {
       setIsLoading(true);
 
       try {
+        setError(null);
         const params = Object.fromEntries(new URLSearchParams(location.search));
         let allBikes: Motorcycle[] = [];
         let page = 1;
+
+        console.log("🚀 Fetching motorcycles with params:", params);
 
         while (allBikes.length < maxRecords) {
           const bikes: Motorcycle[] = await getMotorcycles({
@@ -59,6 +63,8 @@ export default function Browse() {
             page,
             pageSize: fetchPageSize,
           });
+          console.log(`📦 Page ${page} returned ${bikes?.length || 0} bikes`);
+          
           if (!bikes || bikes.length === 0) break;
 
           allBikes = [...allBikes, ...bikes];
@@ -66,9 +72,12 @@ export default function Browse() {
           page++;
         }
 
+        console.log(`✅ Loaded ${allBikes.length} total motorcycles`);
         setMotorcycles(allBikes.slice(0, maxRecords));
       } catch (err) {
-        console.error("Failed to load motorcycles", err);
+        const errorMsg = err instanceof Error ? err.message : "Failed to load motorcycles";
+        console.error("❌ Error:", errorMsg, err);
+        setError(errorMsg);
         setMotorcycles([]);
       } finally {
         setIsLoading(false);
@@ -284,6 +293,14 @@ export default function Browse() {
 
         {/* Results */}
         <div className="flex-1">
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-red-800 font-medium">⚠️ Error loading motorcycles:</p>
+              <p className="text-red-700">{error}</p>
+              <p className="text-sm text-red-600 mt-2">Check browser console for more details.</p>
+            </div>
+          )}
+          
           {viewMode === "grid" ? (
             <MotorcycleGrid
               motorcycles={pagedMotorcycles}

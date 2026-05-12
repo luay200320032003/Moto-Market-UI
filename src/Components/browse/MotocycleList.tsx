@@ -66,8 +66,8 @@ export default function MotorcycleList({ motorcycles, isLoading }: MotorcycleLis
 
   return (
     <div className="space-y-6">
-      {motorcycles.map((bike) => (
-        <div key={bike.id} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow group">
+      {motorcycles.map((bike, index) => (
+        <div key={`${bike.id}-${index}`} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow group">
           <div className="md:flex">
             <div className="md:w-1/3 relative">
               <Link to={createPageUrl(`Motorcycle?id=${bike.id}`)}>

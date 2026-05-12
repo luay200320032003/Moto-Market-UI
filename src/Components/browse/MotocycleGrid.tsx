@@ -60,8 +60,8 @@ export default function MotorcycleGrid({ motorcycles, isLoading }: MotorcycleGri
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {motorcycles.map((bike) => (
-        <div key={bike.id} className="group relative">
+      {motorcycles.map((bike, index) => (
+        <div key={`${bike.id}-${index}`} className="group relative">
           <Link to={createPageUrl(`Motorcycle?id=${bike.id}`)}>
             <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1">
               <div className="relative h-48 overflow-hidden">
