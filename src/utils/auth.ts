@@ -1,8 +1,12 @@
 const TOKEN_STORAGE_KEY = "token";
+const USER_STORAGE_KEY = "user_profile";
 
 export interface AuthUser {
   email?: string;
   full_name?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
   role?: string;
 }
 
@@ -16,6 +20,28 @@ export function storeToken(token: string): void {
 
 export function clearStoredToken(): void {
   localStorage.removeItem(TOKEN_STORAGE_KEY);
+}
+
+export function storeUser(user: AuthUser | null): void {
+  if (!user) {
+    try { localStorage.removeItem(USER_STORAGE_KEY); } catch {}
+    return;
+  }
+  try { localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user)); } catch {}
+}
+
+export function getStoredUser(): AuthUser | null {
+  try {
+    const v = localStorage.getItem(USER_STORAGE_KEY);
+    if (!v) return null;
+    return JSON.parse(v) as AuthUser;
+  } catch {
+    return null;
+  }
+}
+
+export function clearStoredUser(): void {
+  try { localStorage.removeItem(USER_STORAGE_KEY); } catch {}
 }
 
 function decodeBase64Url(value: string): string {

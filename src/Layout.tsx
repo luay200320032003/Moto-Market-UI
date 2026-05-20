@@ -4,6 +4,7 @@ import { createPageUrl } from "./utils";
 import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogIn, LogOut, Menu, X } from "lucide-react";
 import { Button } from "./Components/ui/button";
 import { Outlet } from "react-router-dom";
+import { clearStoredToken, getStoredToken, getUserFromToken, getStoredUser } from "./utils/auth";
 //import { User as UserEntity } from "./Entities/User";
 import {
   DropdownMenu,
@@ -13,13 +14,13 @@ import {
   DropdownMenuSeparator,
 } from "./Components/ui/dropdown-menu";
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
 
 interface UserType {
   full_name?: string;
   email?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
 }
 
 type LoginAccountType = "individual" | "dealer";
@@ -32,6 +33,17 @@ export default function Layout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 ;
 
+  useEffect(() => {
+    const cached = getStoredUser();
+    if (cached) {
+      setUser(cached as any);
+    } else {
+      const token = getStoredToken();
+      setUser(getUserFromToken(token));
+    }
+    setIsLoading(false);
+  }, [location.pathname, location.search]);
+
   const handleLogin = (accountType: LoginAccountType) => {
     const searchParams = new URLSearchParams({
       accountType,
@@ -43,6 +55,7 @@ export default function Layout() {
 
   const handleLogout = async () => {
      console.log("Logout clicked");
+    clearStoredToken();
     setUser(null);
   };
 
@@ -65,14 +78,23 @@ const isActive = (pageName: string): boolean => {
               <span className="hidden md:inline">📞 1-800-MOTO-TRADE</span>
             </div>
             <div className="flex items-center space-x-4">
-              {isLoading && (
+              {!isLoading && (
                 <>
                   {user ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800">
-                          <User className="w-4 h-4 mr-2" />
-                          {user.full_name || user.email}
+                        <Button variant="ghost" size="sm" className="text-white hover:bg-gray-800 flex items-center">
+                          {((user as any).avatarUrl) ? (
+                            <img src={(user as any).avatarUrl} alt="avatar" className="w-6 h-6 rounded-full mr-2 object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-700 mr-2 flex items-center justify-center text-xs font-semibold">
+                              {(() => {
+                                const name = (user as any).full_name || ((user as any).firstName ? `${(user as any).firstName} ${(user as any).lastName || ''}`.trim() : (user as any).email || 'U');
+                                return name ? name.split(' ').map((n: string) => n[0]).slice(0,2).join('').toUpperCase() : 'U';
+                              })()}
+                            </div>
+                          )}
+                          <span className="mr-1">{(user as any).full_name || `${(user as any).firstName || ''} ${(user as any).lastName || ''}`.trim() || (user as any).email}</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">

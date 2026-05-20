@@ -1,0 +1,22 @@
+
+> motmarketui@0.0.1 dev
+> vite --host 127.0.0.1 --port 5317 --strictPort
+
+
+  [32m[1mVITE[22m v4.5.14[39m  [2mready in [0m[1m242[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5317[22m/[39m
+[2m1:55:16 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Login.tsx[22m
+[2m3:05:52 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Login.tsx, /src/Layout.tsx, /src/pages/Browse.tsx, /src/pages/Motocycle.tsx[22m
+[2m3:06:01 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Login.tsx, /src/Layout.tsx, /src/pages/Browse.tsx, /src/pages/Motocycle.tsx[22m
+[2m3:06:03 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Login.tsx[22m
+[2m3:06:06 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/pages/Login.tsx[22m
+[2m3:06:07 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/Layout.tsx, /src/index.css[22m
+[2m3:06:17 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/Layout.tsx, /src/index.css[22m
+[2m3:06:26 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/Layout.tsx, /src/index.css[22m
+[2m3:07:31 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/Layout.tsx, /src/index.css[22m
+[2m3:07:39 PM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/pages/Login.tsx, /src/index.css[22m
+[2m10:45:44 AM[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mdist/index.html[22m
+[2m10:50:16 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/Layout.tsx, /src/index.css[22m
+[2m10:50:16 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/Layout.tsx, /src/index.css[22m
+[2m10:50:37 AM[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/Layout.tsx, /src/index.css[22m

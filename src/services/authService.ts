@@ -1,8 +1,8 @@
 import API from "../api";
-import { clearStoredToken, storeToken } from "../utils/auth";
+import { clearStoredToken, storeToken, storeUser } from "../utils/auth";
 
 interface LoginPayload {
-  email: string;
+  userNameOrEmail: string;
   password: string;
 }
 
@@ -49,6 +49,24 @@ export async function login(payload: LoginPayload): Promise<string> {
   }
 
   storeToken(token);
+  // Try to capture profile returned by the backend and cache it
+  try {
+    const maybeUser = (data && (data as any).user) || (data && (data as any).data && (data as any).data.user) || (data && (data as any).profile) || (data && (data as any).data && (data as any).data.profile) || null;
+    if (maybeUser) {
+      const u = maybeUser as Record<string, any>;
+      const profile = {
+        email: u.email ?? u.emailAddress ?? undefined,
+        full_name: u.full_name ?? u.name ?? undefined,
+        firstName: u.firstName ?? u.first_name ?? u.given_name ?? undefined,
+        lastName: u.lastName ?? u.last_name ?? u.family_name ?? undefined,
+        avatarUrl: u.avatarUrl ?? u.avatar_url ?? u.picture ?? undefined,
+      };
+      try { storeUser(profile as any); } catch {}
+    }
+  } catch (err) {
+    // ignore
+  }
+
   return token;
 }
 

@@ -85,7 +85,7 @@ export default function Login() {
 
     try {
       await login({
-        email: email.trim(),
+        userNameOrEmail: email.trim(),
         password,
       });
 
@@ -214,10 +214,6 @@ export default function Login() {
                 {!isSubmitting && <ArrowRight className="h-4 w-4" />}
               </Button>
             </form>
-
-            <p className="mt-6 text-sm text-gray-500">
-              After login, the token is saved in the browser and automatically attached to API requests.
-            </p>
 
             <Link
               to="/"
