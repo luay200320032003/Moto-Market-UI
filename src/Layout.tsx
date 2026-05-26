@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogIn, LogOut, Menu, X } from "lucide-react";
+import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogIn, LogOut, Menu, X, UserPlus } from "lucide-react";
 import { Button } from "./Components/ui/button";
 import { Outlet } from "react-router-dom";
 import { clearStoredToken, getStoredToken, getUserFromToken, getStoredUser } from "./utils/auth";
@@ -124,6 +124,11 @@ const isActive = (pageName: string): boolean => {
                         <LogIn className="w-4 h-4 mr-2" />
                         Login as Dealer
                       </Button>
+                      <span className="text-gray-400">|</span>
+                      <Link to="/register" className="flex items-center text-sm text-white hover:bg-gray-800 px-3 py-1.5 rounded-md transition-colors">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Register
+                      </Link>
                     </div>
                   )}
                 </>
@@ -293,8 +298,19 @@ const isActive = (pageName: string): boolean => {
                 Sell Your Motorcycle
               </Link>
 
+              <Link
+                to="/register"
+                className={`flex items-center px-3 py-2 rounded-lg ${
+                  isActive("register") ? "bg-red-50 text-red-600" : "text-gray-700"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <UserPlus className="w-5 h-5 mr-3" />
+                Register
+              </Link>
+
               <div className="border-t border-gray-200 my-2"></div>
-              
+
               <div className="px-3 py-2 text-gray-600">
                 <div className="text-sm font-medium mb-2">Services</div>
                 <div className="space-y-1 text-sm">
