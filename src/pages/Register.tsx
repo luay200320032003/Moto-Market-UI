@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowRight, Building2, UserRound } from "lucide-react";
+import { AlertCircle, ArrowRight, Building2, CheckCircle2, UserRound } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import { registerDealer, registerIndividual } from "../services/registerService";
@@ -8,11 +8,138 @@ import { getStoredToken } from "../utils/auth";
 
 type AccountType = "individual" | "dealer";
 
+interface FieldErrors {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  // dealer-only
+  dealershipName?: string;
+  phone?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  website?: string;
+}
+
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+const PHONE_REGEX = /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,19}$/;
+const URL_REGEX = /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z]{2,}\b([-a-zA-Z0-9@:%_+.~#?&/=]*)$/;
+
+interface DealerFields {
+  dealershipName: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  website: string;
+}
+
+function validateFields(
+  firstName: string,
+  lastName: string,
+  email: string,
+  password: string,
+  confirmPassword: string,
+  isDealer: boolean,
+  dealer: DealerFields
+): FieldErrors {
+  const errors: FieldErrors = {};
+
+  if (!firstName.trim()) {
+    errors.firstName = "First name is required.";
+  } else if (firstName.trim().length > 50) {
+    errors.firstName = "First name must be between 1 and 50 characters.";
+  }
+
+  if (!lastName.trim()) {
+    errors.lastName = "Last name is required.";
+  } else if (lastName.trim().length > 50) {
+    errors.lastName = "Last name must be between 1 and 50 characters.";
+  }
+
+  if (!email.trim()) {
+    errors.email = "Email is required.";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    errors.email = "Email is not valid.";
+  } else if (email.trim().length > 256) {
+    errors.email = "Email must not exceed 256 characters.";
+  }
+
+  if (!password) {
+    errors.password = "Password is required.";
+  } else if (password.length < 8) {
+    errors.password = "Password must be at least 8 characters.";
+  } else if (!PASSWORD_REGEX.test(password)) {
+    errors.password =
+      "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character (@$!%*?&).";
+  }
+
+  if (!confirmPassword) {
+    errors.confirmPassword = "Please confirm your password.";
+  } else if (password !== confirmPassword) {
+    errors.confirmPassword = "Passwords do not match.";
+  }
+
+  if (isDealer) {
+    if (!dealer.dealershipName.trim()) {
+      errors.dealershipName = "Dealership name is required.";
+    } else if (dealer.dealershipName.trim().length > 100) {
+      errors.dealershipName = "Dealership name must be between 1 and 100 characters.";
+    }
+
+    if (!dealer.phone.trim()) {
+      errors.phone = "Phone is required.";
+    } else if (!PHONE_REGEX.test(dealer.phone.trim())) {
+      errors.phone = "Phone number is not valid.";
+    } else if (dealer.phone.trim().length > 20) {
+      errors.phone = "Phone must not exceed 20 characters.";
+    }
+
+    if (!dealer.street.trim()) {
+      errors.street = "Street address is required.";
+    } else if (dealer.street.trim().length > 100) {
+      errors.street = "Street must be between 1 and 100 characters.";
+    }
+
+    if (!dealer.city.trim()) {
+      errors.city = "City is required.";
+    } else if (dealer.city.trim().length > 50) {
+      errors.city = "City must be between 1 and 50 characters.";
+    }
+
+    if (!dealer.state.trim()) {
+      errors.state = "State is required.";
+    } else if (dealer.state.trim().length < 2 || dealer.state.trim().length > 5) {
+      errors.state = "State must be between 2 and 5 characters.";
+    }
+
+    if (!dealer.zip.trim()) {
+      errors.zip = "ZIP code is required.";
+    } else if (dealer.zip.trim().length < 3 || dealer.zip.trim().length > 10) {
+      errors.zip = "ZIP code must be between 3 and 10 characters.";
+    }
+
+    if (dealer.website.trim() && !URL_REGEX.test(dealer.website.trim())) {
+      errors.website = "Website must be a valid URL (e.g. https://www.example.com).";
+    } else if (dealer.website.trim().length > 256) {
+      errors.website = "Website must not exceed 256 characters.";
+    }
+  }
+
+  return errors;
+}
+
 export default function Register() {
   const navigate = useNavigate();
   const [accountType, setAccountType] = useState<AccountType>("individual");
-  const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dealerRegistered, setDealerRegistered] = useState(false);
 
   // Shared fields
   const [firstName, setFirstName] = useState("");
@@ -40,19 +167,23 @@ export default function Register() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError("");
+    setSubmitError("");
 
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+    const errors = validateFields(firstName, lastName, email, password, confirmPassword, isDealer, {
+      dealershipName, phone, street, city, state, zip, website,
+    });
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
+    setFieldErrors({});
 
     setIsSubmitting(true);
     try {
       if (isDealer) {
         await registerDealer({
-          firstName,
-          lastName,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           email: email.trim(),
           password,
           dealershipName,
@@ -63,18 +194,18 @@ export default function Register() {
           zip,
           website,
         });
+        setDealerRegistered(true);
+        return;
       } else {
         await registerIndividual({
-          firstName,
-          lastName,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           email: email.trim(),
           password,
         });
       }
 
-      navigate("/login", {
-        state: { registered: true, accountType },
-      });
+      navigate("/login", { state: { registered: true, accountType } });
     } catch (err: unknown) {
       const fallback = "Registration failed. Please try again.";
       if (
@@ -83,16 +214,47 @@ export default function Register() {
         "response" in err &&
         typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
       ) {
-        setError((err as { response?: { data?: { message?: string } } }).response!.data!.message!);
+        setSubmitError((err as { response?: { data?: { message?: string } } }).response!.data!.message!);
       } else if (err instanceof Error) {
-        setError(err.message || fallback);
+        setSubmitError(err.message || fallback);
       } else {
-        setError(fallback);
+        setSubmitError(fallback);
       }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (dealerRegistered) {
+    return (
+      <div className="min-h-[calc(100vh-6rem)] bg-[radial-gradient(circle_at_top,_rgba(220,38,38,0.15),_transparent_35%),linear-gradient(135deg,_#3b548a_0%,_#1f2937_40%,_#1e2f46_40%,_#9bbbdb_100%)] flex items-center justify-center px-4">
+        <div className="max-w-md w-full rounded-3xl border border-white/60 bg-white/90 p-8 shadow-2xl text-center backdrop-blur">
+          <div className="flex justify-center mb-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Dealer Account Created!</h2>
+          <p className="text-gray-600 mb-2">
+            Welcome, <span className="font-semibold">{dealershipName}</span>.
+          </p>
+          <p className="text-gray-500 text-sm mb-8">
+            Your dealer account has been registered successfully. You can now sign in and start managing your listings.
+          </p>
+          <Link
+            to="/login?accountType=dealer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+          >
+            Sign in to your dealer account
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link to="/" className="mt-4 inline-block text-sm font-medium text-red-600 hover:text-red-700">
+            Back to marketplace
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-6rem)] bg-[radial-gradient(circle_at_top,_rgba(220,38,38,0.15),_transparent_35%),linear-gradient(135deg,_#3b548a_0%,_#1f2937_40%,_#1e2f46_40%,_#9bbbdb_100%)]">
@@ -121,11 +283,9 @@ export default function Register() {
             <div className="mb-6 flex rounded-xl border border-gray-200 bg-gray-100 p-1">
               <button
                 type="button"
-                onClick={() => { setAccountType("individual"); setError(""); }}
+                onClick={() => { setAccountType("individual"); setSubmitError(""); setFieldErrors({}); }}
                 className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-all ${
-                  !isDealer
-                    ? "bg-white text-gray-900 shadow"
-                    : "text-gray-500 hover:text-gray-700"
+                  !isDealer ? "bg-white text-gray-900 shadow" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 <UserRound className="h-4 w-4" />
@@ -133,11 +293,9 @@ export default function Register() {
               </button>
               <button
                 type="button"
-                onClick={() => { setAccountType("dealer"); setError(""); }}
+                onClick={() => { setAccountType("dealer"); setSubmitError(""); setFieldErrors({}); }}
                 className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-semibold transition-all ${
-                  isDealer
-                    ? "bg-white text-gray-900 shadow"
-                    : "text-gray-500 hover:text-gray-700"
+                  isDealer ? "bg-white text-gray-900 shadow" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 <Building2 className="h-4 w-4" />
@@ -149,9 +307,7 @@ export default function Register() {
               {/* Name row */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="firstName">
-                    First Name
-                  </label>
+                  <label className="text-sm font-medium text-gray-700" htmlFor="firstName">First Name</label>
                   <Input
                     id="firstName"
                     type="text"
@@ -159,14 +315,17 @@ export default function Register() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="John"
-                    className="h-10 border-gray-200 bg-white"
-                    required
+                    maxLength={50}
+                    className={`h-10 bg-white ${fieldErrors.firstName ? "border-red-400" : "border-gray-200"}`}
                   />
+                  {fieldErrors.firstName && (
+                    <p className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="lastName">
-                    Last Name
-                  </label>
+                  <label className="text-sm font-medium text-gray-700" htmlFor="lastName">Last Name</label>
                   <Input
                     id="lastName"
                     type="text"
@@ -174,16 +333,19 @@ export default function Register() {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Doe"
-                    className="h-10 border-gray-200 bg-white"
-                    required
+                    maxLength={50}
+                    className={`h-10 bg-white ${fieldErrors.lastName ? "border-red-400" : "border-gray-200"}`}
                   />
+                  {fieldErrors.lastName && (
+                    <p className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.lastName}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700" htmlFor="email">
-                  Email
-                </label>
+                <label className="text-sm font-medium text-gray-700" htmlFor="email">Email</label>
                 <Input
                   id="email"
                   type="email"
@@ -191,15 +353,18 @@ export default function Register() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="h-10 border-gray-200 bg-white"
-                  required
+                  maxLength={256}
+                  className={`h-10 bg-white ${fieldErrors.email ? "border-red-400" : "border-gray-200"}`}
                 />
+                {fieldErrors.email && (
+                  <p className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700" htmlFor="password">
-                  Password
-                </label>
+                <label className="text-sm font-medium text-gray-700" htmlFor="password">Password</label>
                 <Input
                   id="password"
                   type="password"
@@ -207,15 +372,21 @@ export default function Register() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
-                  className="h-10 border-gray-200 bg-white"
-                  required
+                  className={`h-10 bg-white ${fieldErrors.password ? "border-red-400" : "border-gray-200"}`}
                 />
+                {fieldErrors.password ? (
+                  <p className="flex items-start gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />{fieldErrors.password}
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400">
+                    Min 8 chars · uppercase · lowercase · digit · special (@$!%*?&)
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700" htmlFor="confirmPassword">
-                  Confirm Password
-                </label>
+                <label className="text-sm font-medium text-gray-700" htmlFor="confirmPassword">Confirm Password</label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -223,9 +394,13 @@ export default function Register() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat your password"
-                  className="h-10 border-gray-200 bg-white"
-                  required
+                  className={`h-10 bg-white ${fieldErrors.confirmPassword ? "border-red-400" : "border-gray-200"}`}
                 />
+                {fieldErrors.confirmPassword && (
+                  <p className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               {/* Dealer-only fields */}
@@ -238,24 +413,25 @@ export default function Register() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700" htmlFor="dealershipName">
-                      Dealership Name
-                    </label>
+                    <label className="text-sm font-medium text-gray-700" htmlFor="dealershipName">Dealership Name</label>
                     <Input
                       id="dealershipName"
                       type="text"
                       value={dealershipName}
                       onChange={(e) => setDealershipName(e.target.value)}
                       placeholder="Moto World Inc."
-                      className="h-10 border-gray-200 bg-white"
-                      required
+                      maxLength={100}
+                      className={`h-10 bg-white ${fieldErrors.dealershipName ? "border-red-400" : "border-gray-200"}`}
                     />
+                    {fieldErrors.dealershipName && (
+                      <p className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.dealershipName}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700" htmlFor="phone">
-                      Phone
-                    </label>
+                    <label className="text-sm font-medium text-gray-700" htmlFor="phone">Phone</label>
                     <Input
                       id="phone"
                       type="tel"
@@ -263,15 +439,18 @@ export default function Register() {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="+1 (555) 000-0000"
-                      className="h-10 border-gray-200 bg-white"
-                      required
+                      maxLength={20}
+                      className={`h-10 bg-white ${fieldErrors.phone ? "border-red-400" : "border-gray-200"}`}
                     />
+                    {fieldErrors.phone && (
+                      <p className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.phone}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-sm font-medium text-gray-700" htmlFor="street">
-                      Street Address
-                    </label>
+                    <label className="text-sm font-medium text-gray-700" htmlFor="street">Street Address</label>
                     <Input
                       id="street"
                       type="text"
@@ -279,15 +458,19 @@ export default function Register() {
                       value={street}
                       onChange={(e) => setStreet(e.target.value)}
                       placeholder="123 Main St"
-                      className="h-10 border-gray-200 bg-white"
+                      maxLength={100}
+                      className={`h-10 bg-white ${fieldErrors.street ? "border-red-400" : "border-gray-200"}`}
                     />
+                    {fieldErrors.street && (
+                      <p className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.street}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <label className="text-sm font-medium text-gray-700" htmlFor="city">
-                        City
-                      </label>
+                      <label className="text-sm font-medium text-gray-700" htmlFor="city">City</label>
                       <Input
                         id="city"
                         type="text"
@@ -295,13 +478,17 @@ export default function Register() {
                         value={city}
                         onChange={(e) => setCity(e.target.value)}
                         placeholder="Nashville"
-                        className="h-10 border-gray-200 bg-white"
+                        maxLength={50}
+                        className={`h-10 bg-white ${fieldErrors.city ? "border-red-400" : "border-gray-200"}`}
                       />
+                      {fieldErrors.city && (
+                        <p className="flex items-center gap-1 text-xs text-red-600">
+                          <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.city}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <label className="text-sm font-medium text-gray-700" htmlFor="state">
-                        State
-                      </label>
+                      <label className="text-sm font-medium text-gray-700" htmlFor="state">State</label>
                       <Input
                         id="state"
                         type="text"
@@ -309,14 +496,17 @@ export default function Register() {
                         value={state}
                         onChange={(e) => setState(e.target.value)}
                         placeholder="TN"
-                        maxLength={2}
-                        className="h-10 border-gray-200 bg-white"
+                        maxLength={5}
+                        className={`h-10 bg-white ${fieldErrors.state ? "border-red-400" : "border-gray-200"}`}
                       />
+                      {fieldErrors.state && (
+                        <p className="flex items-center gap-1 text-xs text-red-600">
+                          <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.state}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <label className="text-sm font-medium text-gray-700" htmlFor="zip">
-                        ZIP
-                      </label>
+                      <label className="text-sm font-medium text-gray-700" htmlFor="zip">ZIP</label>
                       <Input
                         id="zip"
                         type="text"
@@ -324,8 +514,14 @@ export default function Register() {
                         value={zip}
                         onChange={(e) => setZip(e.target.value)}
                         placeholder="37201"
-                        className="h-10 border-gray-200 bg-white"
+                        maxLength={10}
+                        className={`h-10 bg-white ${fieldErrors.zip ? "border-red-400" : "border-gray-200"}`}
                       />
+                      {fieldErrors.zip && (
+                        <p className="flex items-center gap-1 text-xs text-red-600">
+                          <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.zip}
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -339,17 +535,25 @@ export default function Register() {
                       autoComplete="url"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
-                      placeholder="www.yourdealer.com"
-                      className="h-10 border-gray-200 bg-white"
+                      placeholder="https://www.yourdealer.com"
+                      maxLength={256}
+                      className={`h-10 bg-white ${fieldErrors.website ? "border-red-400" : "border-gray-200"}`}
                     />
+                    {fieldErrors.website ? (
+                      <p className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="h-3 w-3 shrink-0" />{fieldErrors.website}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-400">Include https:// — e.g. https://www.yourdealer.com</p>
+                    )}
                   </div>
                 </>
               )}
 
-              {error && (
+              {submitError && (
                 <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{error}</span>
+                  <span>{submitError}</span>
                 </div>
               )}
 
@@ -358,19 +562,14 @@ export default function Register() {
                 disabled={isSubmitting}
                 className="h-11 w-full bg-red-600 text-white hover:bg-red-700"
               >
-                {isSubmitting
-                  ? "Creating account..."
-                  : `Create ${isDealer ? "Dealer" : "Individual"} Account`}
+                {isSubmitting ? "Creating account..." : `Create ${isDealer ? "Dealer" : "Individual"} Account`}
                 {!isSubmitting && <ArrowRight className="h-4 w-4" />}
               </Button>
             </form>
 
             <p className="mt-5 text-sm text-gray-500">
               Already have an account?{" "}
-              <Link
-                to={`/login?accountType=${accountType}`}
-                className="font-medium text-red-600 hover:text-red-700"
-              >
+              <Link to={`/login?accountType=${accountType}`} className="font-medium text-red-600 hover:text-red-700">
                 Sign in
               </Link>
             </p>

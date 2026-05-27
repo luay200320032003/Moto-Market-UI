@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogIn, LogOut, Menu, X, UserPlus } from "lucide-react";
+import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2 } from "lucide-react";
 import { Button } from "./Components/ui/button";
 import { Outlet } from "react-router-dom";
-import { clearStoredToken, getStoredToken, getUserFromToken, getStoredUser } from "./utils/auth";
+import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser } from "./utils/auth";
 //import { User as UserEntity } from "./Entities/User";
 import {
   DropdownMenu,
@@ -34,13 +34,14 @@ export default function Layout() {
 ;
 
   useEffect(() => {
-    const cached = getStoredUser();
-    if (cached) {
-      setUser(cached as any);
-    } else {
-      const token = getStoredToken();
-      setUser(getUserFromToken(token));
+    const token = getStoredToken();
+    if (!token) {
+      setUser(null);
+      setIsLoading(false);
+      return;
     }
+    const cached = getStoredUser();
+    setUser(cached ?? getUserFromToken(token));
     setIsLoading(false);
   }, [location.pathname, location.search]);
 
@@ -54,8 +55,8 @@ export default function Layout() {
   };
 
   const handleLogout = async () => {
-     console.log("Logout clicked");
     clearStoredToken();
+    clearStoredUser();
     setUser(null);
   };
 
@@ -116,12 +117,12 @@ const isActive = (pageName: string): boolean => {
                   ) : (
                     <div className="flex items-center space-x-2">
                       <Button variant="ghost" size="sm" onClick={() => handleLogin("individual")} className="text-white hover:bg-gray-800">
-                        <LogIn className="w-4 h-4 mr-2" />
+                        <UserRound className="w-4 h-4 mr-2" />
                         Login as Individual
                       </Button>
                       <span className="text-gray-400">|</span>
                       <Button variant="ghost" size="sm" onClick={() => handleLogin("dealer")} className="text-white hover:bg-gray-800">
-                        <LogIn className="w-4 h-4 mr-2" />
+                        <Building2 className="w-4 h-4 mr-2" />
                         Login as Dealer
                       </Button>
                       <span className="text-gray-400">|</span>

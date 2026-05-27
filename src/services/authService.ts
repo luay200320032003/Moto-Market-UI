@@ -41,7 +41,7 @@ function extractToken(response: AuthResponse): string | null {
 }
 
 export async function login(payload: LoginPayload): Promise<string> {
-  const { data } = await API.post<AuthResponse>(loginEndpoint, payload);
+  const { data } = await API.post<AuthResponse>(loginEndpoint, payload, { timeout: 60000 });
   const token = extractToken(data);
 
   if (!token) {
