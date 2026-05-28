@@ -25,6 +25,7 @@ interface Motorcycle {
   model: string;
   mileage?: number;
   location: string;
+  source?: string;
 }
 
 interface MotorcycleCardProps {
@@ -39,6 +40,8 @@ export default function MotorcycleCard({ motorcycle, index }: MotorcycleCardProp
 
   if (!motorcycle) return null;
 
+  const isListing = motorcycle.source === "listing";
+  const detailUrl = createPageUrl(`Motorcycle?id=${motorcycle.id}${isListing ? "&type=listing" : ""}`);
   const photos = motorcycle.image_urls?.length ? motorcycle.image_urls : [FALLBACK];
   const hasMultiple = photos.length > 1;
 
@@ -80,7 +83,7 @@ export default function MotorcycleCard({ motorcycle, index }: MotorcycleCardProp
       >
         {/* Image area */}
         <div className="relative h-56 bg-gray-100">
-          <Link to={createPageUrl(`Motorcycle?id=${motorcycle.id}`)}>
+          <Link to={detailUrl}>
             <img
               src={photos[photoIndex]}
               alt={motorcycle.title}
@@ -155,7 +158,7 @@ export default function MotorcycleCard({ motorcycle, index }: MotorcycleCardProp
         </div>
 
         {/* Card body */}
-        <Link to={createPageUrl(`Motorcycle?id=${motorcycle.id}`)}>
+        <Link to={detailUrl}>
           <div className="p-5">
             <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors line-clamp-1">
               {motorcycle.year} {motorcycle.make} {motorcycle.model}

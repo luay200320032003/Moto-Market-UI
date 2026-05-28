@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { getStoredToken } from "../utils/auth";
 import { registerIndividual } from "../services/registerService";
 import { login } from "../services/authService";
+import API from "../api";
 
 const MAX_PHOTOS = 10;
 const STEPS = ["Details", "Price", "Description", "Contact", "Photos"];
@@ -97,6 +98,7 @@ export default function Sell() {
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [publishError, setPublishError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [modalEmail, setModalEmail] = useState("");
   const [modalPassword, setModalPassword] = useState("");
@@ -120,10 +122,42 @@ export default function Sell() {
     setPreviews((p) => p.filter((_, j) => j !== i));
   };
 
-  const publishListing = () => { setIsSubmitted(true); setShowModal(false); };
+  const publishListing = async () => {
+    setPublishError("");
+    try {
+      await API.post("/api/listings", {
+        make:         form.make,
+        model:        form.model,
+        year:         Number(form.year),
+        category:     form.category,
+        condition:    form.condition,
+        fuelType:     form.fuelType,
+        engineSize:   form.engineSize ? Number(form.engineSize) : null,
+        color:        form.color || null,
+        vin:          form.vin || null,
+        price:        Number(form.price),
+        mileage:      form.mileage ? Number(form.mileage) : null,
+        location:     form.location || null,
+        title:        form.title,
+        description:  form.description || null,
+        sellerName:   form.sellerName,
+        contactEmail: form.contactEmail,
+        contactPhone: form.contactPhone || null,
+      });
+      setIsSubmitted(true);
+      setShowModal(false);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.title ||
+        err?.message ||
+        "Failed to publish listing. Please try again.";
+      setPublishError(msg);
+    }
+  };
 
-  const handlePublish = () => {
-    if (getStoredToken()) { publishListing(); }
+  const handlePublish = async () => {
+    if (getStoredToken()) { await publishListing(); }
     else { setModalEmail(form.contactEmail); setModalError(""); setShowModal(true); }
   };
 
@@ -134,7 +168,7 @@ export default function Sell() {
     try {
       await registerIndividual({ firstName: parts[0] || "Seller", lastName: parts.slice(1).join(" ") || ".", email: modalEmail, password: modalPassword });
       await login({ userNameOrEmail: modalEmail, password: modalPassword });
-      publishListing();
+      await publishListing();
     } catch (err: any) {
       setModalError(err?.response?.data?.message || err?.response?.data?.title || err?.message || "Registration failed.");
     } finally { setModalLoading(false); }
@@ -290,6 +324,9 @@ export default function Sell() {
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>Your listing has been published successfully!</span>
         </div>
+      )}
+      {publishError && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{publishError}</p>
       )}
     </div>
   );

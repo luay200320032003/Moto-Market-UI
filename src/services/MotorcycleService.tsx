@@ -55,6 +55,7 @@ function mapToMotorcycle(m: any): Motorcycle {
     seller_name: dealer.name ?? m.source ?? "Unknown Dealer",
     created_date: m.firstSeenAtDate ?? new Date().toISOString(),
     image: mainImage,
+    source: m.source ?? undefined,
   };
 }
 
@@ -65,7 +66,7 @@ export async function getMotorcycles(
   params: GetMotorcyclesParams = {}
 ): Promise<Motorcycle[]> {
   try {
-    const { data }: { data: any } = await API.get("/api/motorcycles", { params });
+    const { data }: { data: any } = await API.get("/api/marketplace", { params });
 
     let motorcyclesArray: any[] = [];
     if (Array.isArray(data?.data)) {
@@ -78,11 +79,11 @@ export async function getMotorcycles(
       return [];
     }
 
-    const mapped = motorcyclesArray.map(mapToMotorcycle);
-    const seen = new Set<string | number>();
+    const mapped = motorcyclesArray.map((m, i) => ({ ...mapToMotorcycle(m), _key: m.externalId ?? `${m.source ?? "unknown"}-${m.id ?? i}` }));
+    const seen = new Set<string>();
     return mapped.filter((m) => {
-      if (seen.has(m.id)) return false;
-      seen.add(m.id);
+      if (seen.has(m._key)) return false;
+      seen.add(m._key);
       return true;
     });
   } catch (error: any) {
@@ -96,9 +97,9 @@ export async function getMotorcycles(
 /**
  * Fetch a single motorcycle by ID
  */
-export async function getMotorcycleById(id: string): Promise<Motorcycle> {
+export async function getMotorcycleById(id: string, source: "market" | "listing" = "market"): Promise<Motorcycle> {
   try {
-    const { data } = await API.get(`/api/motorcycles/${id}`);
+    const { data } = await API.get(`/api/marketplace/${source}/${id}`);
     return mapToMotorcycle(data);
   } catch (error) {
     console.error("❌ Error fetching motorcycle by ID:", error);

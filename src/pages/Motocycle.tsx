@@ -16,6 +16,7 @@ export default function Motocycle() {
 
   const [searchParams] = useSearchParams();
   const motorcycleId = searchParams.get("id");
+  const isListing = searchParams.get("type") === "listing";
 
   useEffect(() => {
     if (!motorcycleId) {
@@ -27,7 +28,7 @@ export default function Motocycle() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const bike = await getMotorcycleById(motorcycleId);
+        const bike = await getMotorcycleById(motorcycleId, isListing ? "listing" : "market");
         setMotorcycle(bike);
 
         // Fetch similar bikes
