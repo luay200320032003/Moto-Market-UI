@@ -68,6 +68,7 @@ export default function Browse() {
           if (!bikes || bikes.length === 0) break;
 
           allBikes = [...allBikes, ...bikes];
+          if (bikes.length < fetchPageSize) break; // last page — no more records
           if (allBikes.length >= maxRecords) break;
           page++;
         }

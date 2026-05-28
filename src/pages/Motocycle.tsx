@@ -1,13 +1,18 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Motorcycle } from "../entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
+
+const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
 
 export default function Motocycle() {
   const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<Motorcycle[]>([]);
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const [fading, setFading] = useState(false);
 
   const [searchParams] = useSearchParams();
   const motorcycleId = searchParams.get("id");
@@ -69,9 +74,17 @@ export default function Motocycle() {
 
   if (!motorcycle)
     return <div className="text-center py-10 text-gray-600">Motorcycle not found.</div>;
-  const mainImage = motorcycle.image_urls?.find(
+  const photos = (motorcycle.image_urls ?? []).filter(
     (url) => typeof url === "string" && url.trim() !== "" && url.startsWith("http") && !url.includes("youtube.com")
   );
+  if (photos.length === 0) photos.push(FALLBACK);
+
+  const goTo = (i: number) => {
+    setFading(true);
+    setTimeout(() => { setPhotoIndex(i); setFading(false); }, 120);
+  };
+  const prev = () => goTo((photoIndex - 1 + photos.length) % photos.length);
+  const next = () => goTo((photoIndex + 1) % photos.length);
   return (
     <div className="max-w-6xl mx-auto p-6 bg-gray-50 mt-8 rounded-2xl shadow-sm border border-gray-200">
       {/* Title & Price */}
@@ -87,16 +100,50 @@ export default function Motocycle() {
 
       {/* Image and Info */}
        <div className="grid md:grid-cols-2 gap-8">
-        <div>
-          {mainImage ? (
+        <div className="space-y-3">
+          {/* Main photo with arrows */}
+          <div className="relative rounded-xl overflow-hidden shadow-md border border-gray-200 h-[400px] bg-gray-100 group">
             <img
-              src={mainImage}
+              src={photos[photoIndex]}
               alt={motorcycle.title}
-              className="rounded-xl w-full h-[400px] object-cover shadow-md border border-gray-200"
+              className="w-full h-full object-cover"
+              style={{ opacity: fading ? 0 : 1, transition: "opacity 0.12s ease" }}
+              onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
             />
-          ) : (
-            <div className="bg-gray-100 h-[400px] flex items-center justify-center rounded-lg text-gray-500">
-              No image available
+
+            {photos.length > 1 && (
+              <>
+                <button
+                  onClick={prev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/75 transition-colors"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={next}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/75 transition-colors"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+                <div className="absolute bottom-3 right-3 z-10 rounded-full bg-black/50 px-3 py-1 text-sm text-white">
+                  {photoIndex + 1} / {photos.length}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Thumbnail strip */}
+          {photos.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {photos.map((src, i) => (
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  className={`flex-shrink-0 h-16 w-24 rounded-lg overflow-hidden border-2 transition-colors ${i === photoIndex ? "border-red-500" : "border-transparent opacity-60 hover:opacity-100"}`}
+                >
+                  <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
             </div>
           )}
         </div>

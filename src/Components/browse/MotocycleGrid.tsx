@@ -1,13 +1,10 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "../../utils";
-import { MapPin, Gauge, Calendar, Heart } from "lucide-react";
-import { Button } from "../ui/button";
-import { Badge } from "../ui/badge";
+import { Gauge } from "lucide-react";
+import MotorcycleCard from "../shared/MotocycleCard";
 
 type Motorcycle = {
   id: string | number;
   image_urls?: string[];
+  image?: string;
   title: string;
   condition: string;
   price?: number;
@@ -61,74 +58,7 @@ export default function MotorcycleGrid({ motorcycles, isLoading }: MotorcycleGri
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {motorcycles.map((bike, index) => (
-        <div key={`${bike.id}-${index}`} className="group relative">
-          <Link to={createPageUrl(`Motorcycle?id=${bike.id}`)}>
-            <div className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1">
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={bike.image_urls?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400"}
-                  alt={bike.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute top-3 left-3">
-                  <Badge variant={bike.condition === 'new' ? 'default' : 'secondary'}>
-                    {bike.condition}
-                  </Badge>
-                </div>
-                <div className="absolute top-3 right-3">
-                  <span className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold">
-                    ${bike.price?.toLocaleString()}
-                  </span>
-                </div>
-                {bike.featured && (
-                  <div className="absolute bottom-3 left-3">
-                    <Badge className="bg-yellow-500 text-yellow-900">
-                      Featured
-                    </Badge>
-                  </div>
-                )}
-              </div>
-              
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors line-clamp-1">
-                  {bike.year} {bike.make} {bike.model}
-                </h3>
-                
-                <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 mb-3">
-                  <div className="flex items-center">
-                    <Gauge className="w-4 h-4 mr-1" />
-                    {bike.mileage?.toLocaleString()} mi
-                  </div>
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    {bike.year}
-                  </div>
-                </div>
-                
-                <div className="flex items-center text-sm text-gray-600 mb-3">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {bike.location}
-                </div>
-                
-                {bike.description && (
-                  <p className="text-gray-600 text-sm line-clamp-2">
-                    {bike.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </Link>
-          
-          {/* Favorite Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm hover:bg-white opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => e.preventDefault()}
-          >
-            <Heart className="w-4 h-4" />
-          </Button>
-        </div>
+        <MotorcycleCard key={`${bike.id}-${index}`} motorcycle={bike} index={index} />
       ))}
     </div>
   );

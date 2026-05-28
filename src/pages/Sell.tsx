@@ -1,604 +1,373 @@
-import { FormEvent, useRef, useMemo, useState } from "react";
-import { BadgeDollarSign, Bike, Camera, CheckCircle2, FileText, Loader2, MapPin, X } from "lucide-react";
+import { FormEvent, useRef, useState } from "react";
+import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
 import { Button } from "../Components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../Components/ui/card";
-import { Input } from "../Components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Components/ui/select";
 import { getStoredToken } from "../utils/auth";
 import { registerIndividual } from "../services/registerService";
 import { login } from "../services/authService";
 
 const MAX_PHOTOS = 10;
+const STEPS = ["Details", "Price", "Description", "Contact", "Photos"];
+
+const makeOptions = [
+  "Aprilia", "Benelli", "Beta", "BMW", "Can-Am", "CFMoto", "Ducati",
+  "Harley-Davidson", "Honda", "Husqvarna", "Indian", "Kawasaki", "KTM",
+  "Moto Guzzi", "Royal Enfield", "Suzuki", "Triumph", "Yamaha", "Zero",
+] as const;
+
+const modelsByMake: Record<string, string[]> = {
+  "Aprilia":         ["RS 660", "Tuono 660", "RSV4", "Tuono V4", "Dorsoduro 900", "Shiver 900"],
+  "Benelli":         ["TRK 502", "Leoncino 500", "752S", "302R", "TNT 600"],
+  "Beta":            ["RR 125", "RR 250", "RR 300", "RR 350", "RR 430", "RR 480", "Xtrainer 300"],
+  "BMW":             ["R 1250 GS", "R 1250 RT", "S 1000 RR", "S 1000 XR", "F 900 R", "F 900 XR", "F 850 GS", "G 310 R", "G 310 GS", "R nineT", "M 1000 RR", "K 1600 GT"],
+  "Can-Am":          ["Ryker 600", "Ryker 900", "Spyder F3", "Spyder F3-S", "Spyder RT"],
+  "CFMoto":          ["300NK", "400NK", "650NK", "650MT", "700CL-X", "800MT"],
+  "Ducati":          ["Panigale V4", "Panigale V2", "Monster", "Multistrada V4", "Diavel V4", "Scrambler Icon", "SuperSport 950", "Hypermotard 950", "DesertX", "Streetfighter V4"],
+  "Harley-Davidson": ["Street Glide", "Road King", "Road Glide", "Sportster S", "Iron 883", "Fat Boy", "Softail Standard", "Street Bob", "Low Rider S", "Pan America 1250", "Nightster", "Ultra Limited"],
+  "Honda":           ["CBR600RR", "CBR1000RR-R", "CB500F", "CB650R", "CB1000R", "Africa Twin", "Gold Wing", "Rebel 500", "Rebel 1100", "NC750X", "CRF300L", "Shadow Phantom"],
+  "Husqvarna":       ["Vitpilen 401", "Svartpilen 401", "Norden 901", "FC 250", "FC 350", "FC 450", "TC 250"],
+  "Indian":          ["Scout", "Scout Bobber", "Chief", "Chief Bobber", "Challenger", "Pursuit", "Roadmaster", "Springfield", "FTR 1200"],
+  "Kawasaki":        ["Ninja 400", "Ninja 650", "Ninja ZX-6R", "Ninja ZX-10R", "Z400", "Z650", "Z900", "Versys 650", "Versys 1000", "KLR 650", "Vulcan 900", "Z125 Pro"],
+  "KTM":             ["Duke 390", "Duke 790", "Duke 890", "Duke 1290 R", "RC 390", "Adventure 390", "Adventure 790", "Adventure 890", "Adventure 1290 S", "1290 Super Duke R"],
+  "Moto Guzzi":      ["V7 Stone", "V7 Special", "V9 Bobber", "V9 Roamer", "V85 TT", "California 1400"],
+  "Royal Enfield":   ["Bullet 350", "Classic 350", "Meteor 350", "Himalayan", "Interceptor 650", "Continental GT 650", "Hunter 350"],
+  "Suzuki":          ["GSX-R600", "GSX-R750", "GSX-R1000", "GSX-S750", "GSX-S1000", "SV650", "V-Strom 650", "V-Strom 1050", "Hayabusa", "Boulevard M109R", "DR-Z400S"],
+  "Triumph":         ["Street Triple R", "Street Triple RS", "Speed Triple 1200", "Tiger 900", "Tiger 1200", "Bonneville T100", "Bonneville T120", "Scrambler 900", "Scrambler 1200", "Rocket 3 R", "Trident 660"],
+  "Yamaha":          ["YZF-R1", "YZF-R3", "YZF-R7", "MT-03", "MT-07", "MT-09", "MT-10", "Tenere 700", "Tracer 9", "VMAX", "V-Star 950", "Bolt"],
+  "Zero":            ["SR/F", "SR/S", "FXE", "DSR/X", "S", "DS", "FX"],
+};
+
 const categoryOptions = ["sport", "cruiser", "touring", "adventure", "dirt", "standard", "scooter"] as const;
 const conditionOptions = ["new", "excellent", "good", "fair", "poor"] as const;
 const fuelOptions = ["gasoline", "electric", "hybrid"] as const;
 
 type SellFormState = {
-  title: string;
-  make: string;
-  model: string;
-  year: string;
-  category: string;
-  condition: string;
-  fuelType: string;
-  price: string;
-  mileage: string;
-  engineSize: string;
-  color: string;
-  location: string;
-  sellerName: string;
-  contactEmail: string;
-  contactPhone: string;
-  description: string;
+  make: string; model: string; year: string; category: string;
+  condition: string; fuelType: string; engineSize: string;
+  color: string; vin: string; price: string; mileage: string;
+  location: string; title: string; description: string;
+  sellerName: string; contactEmail: string; contactPhone: string;
 };
 
 const initialForm: SellFormState = {
-  title: "",
-  make: "",
-  model: "",
-  year: "",
-  category: "",
-  condition: "",
-  fuelType: "",
-  price: "",
-  mileage: "",
-  engineSize: "",
-  color: "",
-  location: "",
-  sellerName: "",
-  contactEmail: "",
-  contactPhone: "",
-  description: "",
+  make: "", model: "", year: "", category: "", condition: "",
+  fuelType: "", engineSize: "", color: "", vin: "",
+  price: "", mileage: "", location: "",
+  title: "", description: "",
+  sellerName: "", contactEmail: "", contactPhone: "",
 };
 
-const formatLabel = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+const fmtLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
+const isValidVin = (v: string) => /^[A-HJ-NPR-Z0-9]{17}$/i.test(v);
+const isValidPhone = (v: string) => /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,19}$/.test(v);
+
+// ── Reusable field wrapper ────────────────────────────────────────────────────
+function Field({
+  label, required, error, children, className,
+}: {
+  label: string; required?: boolean; error?: string; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className={`group relative rounded-2xl border-2 bg-white shadow-sm transition-all focus-within:shadow-md ${error ? "border-red-400" : "border-gray-200 focus-within:border-red-500"}`}>
+        <label className={`absolute left-4 top-3 text-[11px] font-bold tracking-wide transition-colors ${error ? "text-red-500" : "text-gray-400 group-focus-within:text-red-600"}`}>
+          {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+        </label>
+        <div className="px-4 pb-3.5 pt-7">
+          {children}
+        </div>
+      </div>
+      {error && <p className="mt-1.5 text-xs font-medium text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+// Base input styling — no border/bg since Field wrapper handles it
+const inputCls = "w-full border-0 bg-transparent p-0 text-[15px] font-medium text-gray-900 outline-none placeholder-transparent focus:ring-0";
+const selectTriggerCls = "h-auto border-0 bg-transparent p-0 text-[15px] font-medium text-gray-900 shadow-none focus:ring-0 focus:ring-offset-0 [&>span]:truncate";
 
 export default function Sell() {
+  const [step, setStep] = useState(0);
   const [form, setForm] = useState<SellFormState>(initialForm);
+  const [vinError, setVinError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Photo state
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Publish-gate modal state
   const [showModal, setShowModal] = useState(false);
   const [modalEmail, setModalEmail] = useState("");
   const [modalPassword, setModalPassword] = useState("");
   const [modalError, setModalError] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
 
-  const completionCount = useMemo(() => {
-    const values = Object.values(form);
-    return values.filter((value) => value.trim().length > 0).length;
-  }, [form]);
-
-  const updateField = (field: keyof SellFormState, value: string) => {
-    setForm((current) => ({ ...current, [field]: value }));
-    setIsSubmitted(false);
-  };
+  const set = (field: keyof SellFormState, value: string) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleFilesSelected = (files: FileList | null) => {
     if (!files) return;
-    const remaining = MAX_PHOTOS - photos.length;
-    const incoming = Array.from(files).slice(0, remaining);
-    const newPreviews = incoming.map((f) => URL.createObjectURL(f));
-    setPhotos((prev) => [...prev, ...incoming]);
-    setPreviews((prev) => [...prev, ...newPreviews]);
-    // reset so same file can be re-selected
+    const incoming = Array.from(files).slice(0, MAX_PHOTOS - photos.length);
+    setPhotos((p) => [...p, ...incoming]);
+    setPreviews((p) => [...p, ...incoming.map((f) => URL.createObjectURL(f))]);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removePhoto = (index: number) => {
-    URL.revokeObjectURL(previews[index]);
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
+  const removePhoto = (i: number) => {
+    URL.revokeObjectURL(previews[i]);
+    setPhotos((p) => p.filter((_, j) => j !== i));
+    setPreviews((p) => p.filter((_, j) => j !== i));
   };
 
-  function publishListing() {
-    // TODO: wire to backend submission endpoint (pass `photos` array)
-    setIsSubmitted(true);
-    setShowModal(false);
-  }
+  const publishListing = () => { setIsSubmitted(true); setShowModal(false); };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (getStoredToken()) {
-      publishListing();
-    } else {
-      setModalEmail(form.contactEmail);
-      setModalError("");
-      setShowModal(true);
-    }
+  const handlePublish = () => {
+    if (getStoredToken()) { publishListing(); }
+    else { setModalEmail(form.contactEmail); setModalError(""); setShowModal(true); }
   };
 
-  const handleModalPublish = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setModalError("");
-    setModalLoading(true);
-
+  const handleModalPublish = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setModalError(""); setModalLoading(true);
     const parts = form.sellerName.trim().split(" ");
-    const firstName = parts[0] || "Seller";
-    const lastName = parts.slice(1).join(" ") || ".";
-
     try {
-      await registerIndividual({ firstName, lastName, email: modalEmail, password: modalPassword });
+      await registerIndividual({ firstName: parts[0] || "Seller", lastName: parts.slice(1).join(" ") || ".", email: modalEmail, password: modalPassword });
       await login({ userNameOrEmail: modalEmail, password: modalPassword });
       publishListing();
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.title ||
-        err?.message ||
-        "Registration failed. Please try again.";
-      setModalError(msg);
-    } finally {
-      setModalLoading(false);
-    }
+      setModalError(err?.response?.data?.message || err?.response?.data?.title || err?.message || "Registration failed.");
+    } finally { setModalLoading(false); }
   };
 
-  return (
-    <div className="min-h-[calc(100vh-6rem)] bg-gray-50 py-10">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8">
-        <section className="space-y-6">
-          <div className="rounded-3xl bg-gradient-to-br from-gray-900 via-gray-800 to-red-700 p-8 text-white shadow-xl">
-            <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-1 text-sm font-medium">
-              Seller dashboard
-            </span>
-            <h1 className="mt-5 text-4xl font-black tracking-tight">Sell your motorcycle with the right listing details.</h1>
-            <p className="mt-4 max-w-xl text-gray-200">
-              Fill in your bike's details, then publish. If you don't have an account yet, we'll create one for you in seconds.
-            </p>
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                <Bike className="mb-3 h-5 w-5" />
-                <p className="text-sm font-semibold">Clear bike profile</p>
-                <p className="mt-1 text-sm text-gray-300">Make, model, year, and category are captured up front.</p>
-              </div>
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                <BadgeDollarSign className="mb-3 h-5 w-5" />
-                <p className="text-sm font-semibold">Ready to price</p>
-                <p className="mt-1 text-sm text-gray-300">Include price, mileage, engine size, and location.</p>
-              </div>
-              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-                <FileText className="mb-3 h-5 w-5" />
-                <p className="text-sm font-semibold">Buyer-friendly details</p>
-                <p className="mt-1 text-sm text-gray-300">Description and contact info stay visible to interested buyers.</p>
-              </div>
-            </div>
+  const canAdvance = () => {
+    if (step === 0) return form.make && form.model && form.year && form.category && form.condition && form.fuelType && !vinError;
+    if (step === 1) return form.price && form.mileage && !phoneError;
+    if (step === 2) return form.title;
+    if (step === 3) return form.sellerName && form.contactEmail;
+    return true;
+  };
+
+  // ── Step content ─────────────────────────────────────────────────────────────
+
+  const renderDetails = () => (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Field label="Make" required>
+        <Select value={form.make} onValueChange={(v) => { set("make", v); set("model", ""); }}>
+          <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
+          <SelectContent>{makeOptions.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}</SelectContent>
+        </Select>
+      </Field>
+      <Field label="Model" required>
+        <Select value={form.model} onValueChange={(v) => set("model", v)} disabled={!form.make}>
+          <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {(modelsByMake[form.make] ?? []).map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </Field>
+      <Field label="Year" required>
+        <input className={inputCls} type="number" min="1900" max="2100" value={form.year} onChange={(e) => set("year", e.target.value)} />
+      </Field>
+      <Field label="Category" required>
+        <Select value={form.category} onValueChange={(v) => set("category", v)}>
+          <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
+          <SelectContent>{categoryOptions.map((o) => <SelectItem key={o} value={o}>{fmtLabel(o)}</SelectItem>)}</SelectContent>
+        </Select>
+      </Field>
+      <Field label="Condition" required>
+        <Select value={form.condition} onValueChange={(v) => set("condition", v)}>
+          <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
+          <SelectContent>{conditionOptions.map((o) => <SelectItem key={o} value={o}>{fmtLabel(o)}</SelectItem>)}</SelectContent>
+        </Select>
+      </Field>
+      <Field label="Fuel type" required>
+        <Select value={form.fuelType} onValueChange={(v) => set("fuelType", v)}>
+          <SelectTrigger className={selectTriggerCls}><SelectValue /></SelectTrigger>
+          <SelectContent>{fuelOptions.map((o) => <SelectItem key={o} value={o}>{fmtLabel(o)}</SelectItem>)}</SelectContent>
+        </Select>
+      </Field>
+      <Field label="Engine size (cc)" required>
+        <input className={inputCls} type="number" min="0" value={form.engineSize} onChange={(e) => set("engineSize", e.target.value)} />
+      </Field>
+      <Field label="Color" required>
+        <input className={inputCls} value={form.color} onChange={(e) => set("color", e.target.value)} />
+      </Field>
+      <Field label="VIN number" required error={vinError} className="sm:col-span-2">
+        <input
+          className={`${inputCls} font-mono tracking-widest`}
+          maxLength={17}
+          value={form.vin}
+          onChange={(e) => {
+            const val = e.target.value.toUpperCase();
+            set("vin", val);
+            setVinError(val.length > 0 && !isValidVin(val) ? "Invalid VIN — must be 17 characters, no I, O, or Q" : "");
+          }}
+        />
+      </Field>
+    </div>
+  );
+
+  const renderPrice = () => (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Field label="Price ($)" required>
+        <input className={inputCls} type="number" min="0" value={form.price} onChange={(e) => set("price", e.target.value)} />
+      </Field>
+      <Field label="Mileage (mi)" required>
+        <input className={inputCls} type="number" min="0" value={form.mileage} onChange={(e) => set("mileage", e.target.value)} />
+      </Field>
+      <Field label="Location" className="sm:col-span-2">
+        <input className={inputCls} value={form.location} onChange={(e) => set("location", e.target.value)} />
+      </Field>
+    </div>
+  );
+
+  const renderDescription = () => (
+    <div className="space-y-4">
+      <Field label="Listing title" required>
+        <input className={inputCls} value={form.title} onChange={(e) => set("title", e.target.value)} />
+      </Field>
+      <Field label="Description">
+        <textarea
+          value={form.description}
+          onChange={(e) => set("description", e.target.value)}
+          maxLength={7000}
+          rows={8}
+          className="w-full resize-none border-0 bg-transparent p-0 text-sm text-gray-900 outline-none focus:ring-0"
+        />
+        <p className="mt-1 text-right text-xs text-gray-400">{form.description.length} / 7000</p>
+      </Field>
+    </div>
+  );
+
+  const renderContact = () => (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Field label="Seller name" required>
+        <input className={inputCls} value={form.sellerName} onChange={(e) => set("sellerName", e.target.value)} />
+      </Field>
+      <Field label="Contact email" required>
+        <input className={inputCls} type="email" value={form.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} />
+      </Field>
+      <Field label="Contact phone" error={phoneError} className="sm:col-span-2">
+        <input
+          className={inputCls}
+          value={form.contactPhone}
+          onChange={(e) => {
+            const val = e.target.value;
+            set("contactPhone", val);
+            setPhoneError(val.length > 0 && !isValidPhone(val) ? "Invalid phone — digits, spaces, +, -, ( ) only" : "");
+          }}
+        />
+      </Field>
+    </div>
+  );
+
+  const renderPhotos = () => (
+    <div className="space-y-4">
+      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFilesSelected(e.target.files)} />
+      <div className="grid grid-cols-5 gap-3">
+        {previews.map((src, i) => (
+          <div key={i} className="relative aspect-square">
+            <img src={src} alt={`Photo ${i + 1}`} className="h-full w-full rounded-xl object-cover border border-gray-200" />
+            {i === 0 && <span className="absolute bottom-1 left-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">Main</span>}
+            <button type="button" onClick={() => removePhoto(i)} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white hover:bg-red-600">
+              <X className="h-3 w-3" />
+            </button>
           </div>
+        ))}
+        {photos.length < MAX_PHOTOS && (
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-red-400 hover:text-red-500 transition-colors">
+            <Camera className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Add</span>
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-gray-400">
+        {photos.length === 0 ? "Upload up to 10 photos. The first will be the main listing image." : `${photos.length} of ${MAX_PHOTOS} photos added.`}
+      </p>
+      {isSubmitted && (
+        <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Your listing has been published successfully!</span>
+        </div>
+      )}
+    </div>
+  );
 
-          <Card className="border-gray-200">
-            <CardHeader>
-              <CardTitle>Listing preview</CardTitle>
-              <CardDescription>This updates as you fill in the sell form.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {previews.length > 0 ? (
-                <div className="overflow-hidden rounded-2xl border border-gray-200">
-                  <img
-                    src={previews[0]}
-                    alt="Primary photo"
-                    className="h-48 w-full object-cover"
-                  />
-                  {previews.length > 1 && (
-                    <div className="flex gap-1 p-1">
-                      {previews.slice(1).map((src, i) => (
-                        <img
-                          key={i}
-                          src={src}
-                          alt={`Photo ${i + 2}`}
-                          className="h-14 w-14 rounded-lg object-cover"
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-100 p-5">
-                  <p className="text-xl font-bold text-gray-900">{form.title || "Your motorcycle title"}</p>
-                  <p className="mt-2 text-sm text-gray-600">
-                    {[form.year, form.make, form.model].filter(Boolean).join(" ") || "Year, make, and model will appear here."}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {form.category && <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700">{formatLabel(form.category)}</span>}
-                    {form.condition && <span className="rounded-full bg-gray-900 px-3 py-1 text-xs font-medium text-white">{formatLabel(form.condition)}</span>}
-                    {form.fuelType && <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700">{formatLabel(form.fuelType)}</span>}
-                  </div>
-                </div>
-              )}
+  const stepContent = [renderDetails, renderPrice, renderDescription, renderContact, renderPhotos];
 
-              <div className="grid gap-3 text-sm text-gray-600 sm:grid-cols-2">
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  <p className="font-medium text-gray-900">Price</p>
-                  <p className="mt-1">{form.price ? `$${Number(form.price).toLocaleString()}` : "Not set"}</p>
+  return (
+    <div className="min-h-[calc(100vh-6rem)] bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900 py-10">
+      <div className="mx-auto max-w-2xl px-4">
+
+        {/* Progress stepper */}
+        <div className="mb-8 flex items-start">
+          {STEPS.map((label, i) => (
+            <div key={label} className="flex flex-1 flex-col items-center">
+              <div className="flex w-full items-center">
+                {i > 0 && <div className={`h-px flex-1 transition-colors ${i <= step ? "bg-red-500" : "bg-gray-700"}`} />}
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-colors ${
+                  i < step ? "border-red-500 bg-red-500 text-white"
+                  : i === step ? "border-red-500 bg-white text-red-600"
+                  : "border-gray-600 bg-transparent text-gray-500"
+                }`}>
+                  {i < step ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                 </div>
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  <p className="font-medium text-gray-900">Mileage</p>
-                  <p className="mt-1">{form.mileage ? `${Number(form.mileage).toLocaleString()} miles` : "Not set"}</p>
-                </div>
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  <p className="font-medium text-gray-900">Seller</p>
-                  <p className="mt-1">{form.sellerName || "Not set"}</p>
-                </div>
-                <div className="rounded-2xl border border-gray-200 p-4">
-                  <p className="font-medium text-gray-900">Location</p>
-                  <p className="mt-1">{form.location || "Not set"}</p>
-                </div>
+                {i < STEPS.length - 1 && <div className={`h-px flex-1 transition-colors ${i < step ? "bg-red-500" : "bg-gray-700"}`} />}
               </div>
-            </CardContent>
-          </Card>
-        </section>
+              <span className={`mt-2 text-xs font-medium ${i === step ? "text-white" : "text-gray-500"}`}>{label}</span>
+            </div>
+          ))}
+        </div>
 
-        <Card className="border-gray-200 shadow-sm">
-          <CardHeader>
-            <CardTitle>Create listing</CardTitle>
-            <CardDescription>Complete the fields below. The dropdown menus are required for structured motorcycle details.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="title">
-                    Listing title
-                  </label>
-                  <Input
-                    id="title"
-                    value={form.title}
-                    onChange={(event) => updateField("title", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                    required
-                  />
-                </div>
+        {/* Card */}
+        <div className="rounded-2xl bg-white p-8 shadow-2xl">
+          <h2 className="mb-1 text-xl font-bold text-gray-900">{STEPS[step]}</h2>
+          <p className="mb-6 text-sm text-gray-400">
+            {["Enter your motorcycle's basic details.", "Set your asking price and mileage.", "Write a title and description.", "How should buyers reach you?", "Add up to 10 photos. First photo is the main image."][step]}
+          </p>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="make">Make</label>
-                  <Input
-                    id="make"
-                    value={form.make}
-                    onChange={(event) => updateField("make", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                    required
-                  />
-                </div>
+          {stepContent[step]()}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="model">Model</label>
-                  <Input
-                    id="model"
-                    value={form.model}
-                    onChange={(event) => updateField("model", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="year">Year</label>
-                  <Input
-                    id="year"
-                    type="number"
-                    min="1900"
-                    max="2100"
-                    value={form.year}
-                    onChange={(event) => updateField("year", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Category</label>
-                  <Select value={form.category} onValueChange={(value) => updateField("category", value)}>
-                    <SelectTrigger className="h-11 border-gray-200 bg-white">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.map((option) => (
-                        <SelectItem key={option} value={option}>{formatLabel(option)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Condition</label>
-                  <Select value={form.condition} onValueChange={(value) => updateField("condition", value)}>
-                    <SelectTrigger className="h-11 border-gray-200 bg-white">
-                      <SelectValue placeholder="Select condition" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {conditionOptions.map((option) => (
-                        <SelectItem key={option} value={option}>{formatLabel(option)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Fuel type</label>
-                  <Select value={form.fuelType} onValueChange={(value) => updateField("fuelType", value)}>
-                    <SelectTrigger className="h-11 border-gray-200 bg-white">
-                      <SelectValue placeholder="Select fuel type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {fuelOptions.map((option) => (
-                        <SelectItem key={option} value={option}>{formatLabel(option)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="price">Price</label>
-                  <Input
-                    id="price"
-                    type="number"
-                    min="0"
-                    value={form.price}
-                    onChange={(event) => updateField("price", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="mileage">Mileage</label>
-                  <Input
-                    id="mileage"
-                    type="number"
-                    min="0"
-                    value={form.mileage}
-                    onChange={(event) => updateField("mileage", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="engineSize">Engine size (cc)</label>
-                  <Input
-                    id="engineSize"
-                    type="number"
-                    min="0"
-                    value={form.engineSize}
-                    onChange={(event) => updateField("engineSize", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="color">Color</label>
-                  <Input
-                    id="color"
-                    value={form.color}
-                    onChange={(event) => updateField("color", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="location">Location</label>
-                  <Input
-                    id="location"
-                    value={form.location}
-                    onChange={(event) => updateField("location", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="sellerName">Seller name</label>
-                  <Input
-                    id="sellerName"
-                    value={form.sellerName}
-                    onChange={(event) => updateField("sellerName", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="contactEmail">Contact email</label>
-                  <Input
-                    id="contactEmail"
-                    type="email"
-                    value={form.contactEmail}
-                    onChange={(event) => updateField("contactEmail", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="contactPhone">Contact phone</label>
-                  <Input
-                    id="contactPhone"
-                    value={form.contactPhone}
-                    onChange={(event) => updateField("contactPhone", event.target.value)}
-                    placeholder=""
-                    className="h-11 border-gray-200 bg-white"
-                  />
-                </div>
-
-                {/* Photo upload — up to 10 photos */}
-                <div className="space-y-3 sm:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700">
-                      Photos
-                    </label>
-                    <span className="text-xs text-gray-400">{photos.length} / {MAX_PHOTOS}</span>
-                  </div>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleFilesSelected(e.target.files)}
-                  />
-
-                  <div className="grid grid-cols-5 gap-2">
-                    {previews.map((src, index) => (
-                      <div key={index} className="relative aspect-square">
-                        <img
-                          src={src}
-                          alt={`Photo ${index + 1}`}
-                          className="h-full w-full rounded-xl object-cover border border-gray-200"
-                        />
-                        {index === 0 && (
-                          <span className="absolute bottom-1 left-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                            Main
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(index)}
-                          className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-white hover:bg-red-600"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-
-                    {photos.length < MAX_PHOTOS && (
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-red-400 hover:text-red-500 transition-colors"
-                      >
-                        <Camera className="h-5 w-5" />
-                        <span className="text-[10px] font-medium">Add</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {photos.length === 0 && (
-                    <p className="text-xs text-gray-400">Upload up to 10 photos. The first photo will be used as the main listing image.</p>
-                  )}
-                </div>
-
-                <div className="space-y-2 sm:col-span-2">
-                  <label className="text-sm font-medium text-gray-700" htmlFor="description">Description</label>
-                  <textarea
-                    id="description"
-                    value={form.description}
-                    onChange={(event) => updateField("description", event.target.value)}
-                    placeholder=""
-                    className="min-h-[140px] w-full rounded-md border border-gray-200 bg-white px-3 py-3 text-sm shadow-sm outline-none transition-colors placeholder:text-gray-400 focus:ring-1 focus:ring-gray-900"
-                  />
-                </div>
-              </div>
-
-              {isSubmitted && (
-                <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>Your listing has been published successfully!</span>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-gray-600">
-                  <p className="font-medium text-gray-900">Form progress</p>
-                  <p>{completionCount} of {Object.keys(initialForm).length} fields completed</p>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <MapPin className="h-4 w-4" />
-                  No account needed to get started.
-                </div>
-                <Button type="submit" className="bg-red-600 text-white hover:bg-red-700">
-                  Publish Listing
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+          {/* Nav buttons */}
+          <div className="mt-8 flex items-center justify-between">
+            <Button variant="outline" type="button" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="flex items-center gap-1 rounded-xl border-gray-300">
+              <ChevronLeft className="h-4 w-4" /> Back
+            </Button>
+            {step < STEPS.length - 1 ? (
+              <Button type="button" onClick={() => setStep((s) => s + 1)} disabled={!canAdvance()} className="flex items-center gap-1 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                Next <ChevronRight className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button type="button" onClick={handlePublish} disabled={isSubmitted} className="rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+                Publish Listing
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Publish-gate modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="relative w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
-            <button
-              type="button"
-              onClick={() => setShowModal(false)}
-              className="absolute right-4 top-4 rounded-md p-1 text-gray-400 hover:text-gray-700"
-            >
+            <button type="button" onClick={() => setShowModal(false)} className="absolute right-4 top-4 text-gray-400 hover:text-gray-700">
               <X className="h-5 w-5" />
             </button>
-
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Almost done!</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Create a free account to publish your listing. It only takes a moment.
-              </p>
-            </div>
-
+            <h2 className="mb-1 text-xl font-bold text-gray-900">Almost done!</h2>
+            <p className="mb-6 text-sm text-gray-500">Create a free account to publish your listing.</p>
             <form onSubmit={handleModalPublish} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="modal-email">Email</label>
-                <Input
-                  id="modal-email"
-                  type="email"
-                  value={modalEmail}
-                  onChange={(e) => setModalEmail(e.target.value)}
-                  placeholder=""
-                  className="h-11 border-gray-200 bg-white"
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700" htmlFor="modal-password">Password</label>
-                <Input
-                  id="modal-password"
-                  type="password"
-                  value={modalPassword}
-                  onChange={(e) => setModalPassword(e.target.value)}
-                  placeholder="Min 8 chars, upper, lower, digit, symbol"
-                  className="h-11 border-gray-200 bg-white"
-                  required
-                />
-              </div>
-
-              {modalError && (
-                <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-                  {modalError}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                disabled={modalLoading}
-                className="w-full bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
-              >
-                {modalLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating account…
-                  </span>
-                ) : (
-                  "Create Account & Publish"
-                )}
+              <Field label="Email" required>
+                <input className={inputCls} type="email" value={modalEmail} onChange={(e) => setModalEmail(e.target.value)} required autoFocus />
+              </Field>
+              <Field label="Password" required>
+                <input className={inputCls} type="password" value={modalPassword} onChange={(e) => setModalPassword(e.target.value)} required />
+              </Field>
+              {modalError && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{modalError}</p>}
+              <Button type="submit" disabled={modalLoading} className="w-full rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60">
+                {modalLoading ? <span className="flex items-center justify-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />Creating account…</span> : "Create Account & Publish"}
               </Button>
-
-              <p className="text-center text-xs text-gray-400">
-                Already have an account?{" "}
-                <a href="/login" className="text-red-600 hover:underline">Sign in</a>
-              </p>
+              <p className="text-center text-xs text-gray-400">Already have an account? <a href="/login" className="text-red-600 hover:underline">Sign in</a></p>
             </form>
           </div>
         </div>

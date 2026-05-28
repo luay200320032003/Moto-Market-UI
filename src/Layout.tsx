@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { Search, Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2 } from "lucide-react";
+import { Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2 } from "lucide-react";
 import { Button } from "./Components/ui/button";
 import { Outlet } from "react-router-dom";
 import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser } from "./utils/auth";
@@ -241,12 +241,6 @@ const isActive = (pageName: string): boolean => {
               <Button variant="ghost" size="icon" className="text-gray-600 hover:text-red-600">
                 <Phone className="w-5 h-5" />
               </Button>
-              <Link to={createPageUrl("Sell")}>
-                <Button className="bg-red-600 hover:bg-red-700 text-white">
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Sell Now
-                </Button>
-              </Link>
             </div>
 
             {/* Mobile Menu Button */}
