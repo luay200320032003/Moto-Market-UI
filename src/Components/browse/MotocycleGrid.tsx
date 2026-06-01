@@ -25,7 +25,7 @@ type MotorcycleGridProps = {
 export default function MotorcycleGrid({ motorcycles, isLoading }: MotorcycleGridProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {Array(9).fill(0).map((_, i) => (
           <div key={i} className="bg-white rounded-lg overflow-hidden shadow-md animate-pulse">
             <div className="h-48 bg-gray-300"></div>
@@ -56,7 +56,7 @@ export default function MotorcycleGrid({ motorcycles, isLoading }: MotorcycleGri
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
       {motorcycles.map((bike, index) => (
         <MotorcycleCard key={`${bike.id}-${index}`} motorcycle={bike} index={index} />
       ))}

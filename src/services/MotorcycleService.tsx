@@ -56,6 +56,7 @@ function mapToMotorcycle(m: any): Motorcycle {
     created_date: m.firstSeenAtDate ?? new Date().toISOString(),
     image: mainImage,
     source: m.source ?? undefined,
+    vin: m.vin ?? undefined,
   };
 }
 

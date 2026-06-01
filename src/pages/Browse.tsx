@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Motorcycle } from "../entities/Motorcycle";
 import { useLocation } from "react-router-dom";
 import { Search, Grid, List, SlidersHorizontal } from "lucide-react";
@@ -31,9 +31,9 @@ export default function Browse() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const maxRecords = 70; // backend fetch limit
-  const uiPageSize = 12; // show 10 items per page in UI
-  const fetchPageSize = 50; // backend fetch per API call
+  const maxRecords = 600; // upper safety cap
+  const uiPageSize = 12; // cards shown per UI page
+  const fetchPageSize = 100; // records per API call
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -185,7 +185,7 @@ export default function Browse() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             {/* Search */}
             <div className="relative flex-1 md:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -315,37 +315,40 @@ export default function Browse() {
           )}
 
           {/* Pagination */}
-          <div className="flex justify-center mt-6 space-x-2">
-            <Button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((prev) => prev - 1)}
-            >
-              Prev
-            </Button>
+          {(() => {
+            const totalPages = Math.ceil(filteredMotorcycles.length / uiPageSize);
+            if (totalPages <= 1) return null;
 
-            {Array.from(
-              { length: Math.ceil(filteredMotorcycles.length / uiPageSize) },
-              (_, i) => (
-                <Button
-                  key={i}
-                  variant={currentPage === i + 1 ? "default" : "outline"}
-                  onClick={() => setCurrentPage(i + 1)}
-                >
-                  {i + 1}
+            const windowSize = 10;
+            const windowStart = Math.max(1, Math.min(currentPage - Math.floor(windowSize / 2), totalPages - windowSize + 1));
+            const windowEnd = Math.min(totalPages, windowStart + windowSize - 1);
+            const pages = Array.from({ length: windowEnd - windowStart + 1 }, (_, i) => windowStart + i);
+
+            return (
+              <div className="flex items-center gap-2 mt-8 w-full border-t border-gray-200 pt-6">
+                <Button variant="outline" className="shrink-0" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+                  ← Prev
                 </Button>
-              )
-            )}
-
-            <Button
-              disabled={
-                currentPage ===
-                Math.ceil(filteredMotorcycles.length / uiPageSize)
-              }
-              onClick={() => setCurrentPage((prev) => prev + 1)}
-            >
-              Next
-            </Button>
-          </div>
+                <div className="flex flex-1 justify-center items-center gap-1">
+                  {pages.map((p) => (
+                    <Button
+                      key={p}
+                      size="sm"
+                      onClick={() => setCurrentPage(p)}
+                      className={currentPage === p
+                        ? "bg-red-600 hover:bg-red-700 text-white"
+                        : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"}
+                    >
+                      {p}
+                    </Button>
+                  ))}
+                </div>
+                <Button variant="outline" className="shrink-0" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
+                  Next →
+                </Button>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

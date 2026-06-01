@@ -157,7 +157,7 @@ export default function Motocycle() {
             <Detail label="Model" value={motorcycle.model} />
             <Detail label="Trim" value={motorcycle.description?.split("-")[0] || "N/A"} />
             <Detail label="Year" value={motorcycle.year.toString()} />
-            <Detail label="VIN" value={(motorcycle as any).vin || "N/A"} />
+            <Detail label="VIN" value={motorcycle.vin || "N/A"} />
             <Detail label="Color" value={motorcycle.color || "N/A"} />
             <Detail label="Engine" value={(motorcycle as any).build?.engine || motorcycle.engine_size || "N/A"} />
             <Detail label="Transmission" value={(motorcycle as any).build?.transmission || "N/A"} />

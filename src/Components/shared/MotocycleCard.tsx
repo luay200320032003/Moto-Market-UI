@@ -24,7 +24,7 @@ interface Motorcycle {
   make: string;
   model: string;
   mileage?: number;
-  location: string;
+  location?: string;
   source?: string;
 }
 
@@ -82,7 +82,7 @@ export default function MotorcycleCard({ motorcycle, index }: MotorcycleCardProp
         onMouseLeave={() => setHovered(false)}
       >
         {/* Image area */}
-        <div className="relative h-56 bg-gray-100">
+        <div className="relative h-64 bg-gray-100">
           <Link to={detailUrl}>
             <img
               src={photos[photoIndex]}

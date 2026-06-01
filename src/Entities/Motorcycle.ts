@@ -21,6 +21,7 @@ export interface Motorcycle {
   created_date: string; // Date created (ISO string)
   image: string;
   source?: string;
+  vin?: string;
 }
 
 // Example function to fetch motorcycles (replace with real API call as needed)
