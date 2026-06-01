@@ -46,46 +46,44 @@ export default function Browse() {
 
   // Fetch motorcycles from backend (up to maxRecords)
   useEffect(() => {
+    let cancelled = false;
+
     const fetchMotorcycles = async () => {
       setIsLoading(true);
+      setMotorcycles([]);
+      setError(null);
 
       try {
-        setError(null);
         const params = Object.fromEntries(new URLSearchParams(location.search));
         let allBikes: Motorcycle[] = [];
         let page = 1;
 
-        console.log("🚀 Fetching motorcycles with params:", params);
-
         while (allBikes.length < maxRecords) {
-          const bikes: Motorcycle[] = await getMotorcycles({
-            ...params,
-            page,
-            pageSize: fetchPageSize,
-          });
-          console.log(`📦 Page ${page} returned ${bikes?.length || 0} bikes`);
-          
+          const bikes: Motorcycle[] = await getMotorcycles({ ...params, page, pageSize: fetchPageSize });
+
+          if (cancelled) return;
           if (!bikes || bikes.length === 0) break;
 
           allBikes = [...allBikes, ...bikes];
-          if (bikes.length < fetchPageSize) break; // last page — no more records
+          setMotorcycles([...allBikes]);  // show results immediately after each page
+          setIsLoading(false);            // remove skeleton after first page arrives
+
+          if (bikes.length < fetchPageSize) break;
           if (allBikes.length >= maxRecords) break;
           page++;
         }
-
-        console.log(`✅ Loaded ${allBikes.length} total motorcycles`);
-        setMotorcycles(allBikes.slice(0, maxRecords));
       } catch (err) {
+        if (cancelled) return;
         const errorMsg = err instanceof Error ? err.message : "Failed to load motorcycles";
-        console.error("❌ Error:", errorMsg, err);
         setError(errorMsg);
         setMotorcycles([]);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     fetchMotorcycles();
+    return () => { cancelled = true; };
   }, [location.search]);
 
   // Apply filters

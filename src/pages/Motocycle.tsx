@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 import { Motorcycle } from "../entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
+import API from "../api";
 
 const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
 
@@ -13,6 +14,9 @@ export default function Motocycle() {
   const [similar, setSimilar] = useState<Motorcycle[]>([]);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [fading, setFading] = useState(false);
+  const [vinData, setVinData] = useState<any>(null);
+  const [vinLoading, setVinLoading] = useState(false);
+  const [vinError, setVinError] = useState("");
 
   const [searchParams] = useSearchParams();
   const motorcycleId = searchParams.get("id");
@@ -79,6 +83,21 @@ export default function Motocycle() {
     (url) => typeof url === "string" && url.trim() !== "" && url.startsWith("http") && !url.includes("youtube.com")
   );
   if (photos.length === 0) photos.push(FALLBACK);
+
+  const checkVin = async () => {
+    if (!motorcycle.vin) return;
+    setVinLoading(true);
+    setVinError("");
+    setVinData(null);
+    try {
+      const { data } = await API.get(`/api/vin/${motorcycle.vin}`);
+      setVinData(data);
+    } catch (err: any) {
+      setVinError(err?.response?.data?.message || err?.message || "Failed to check VIN.");
+    } finally {
+      setVinLoading(false);
+    }
+  };
 
   const goTo = (i: number) => {
     setFading(true);
@@ -157,7 +176,58 @@ export default function Motocycle() {
             <Detail label="Model" value={motorcycle.model} />
             <Detail label="Trim" value={motorcycle.description?.split("-")[0] || "N/A"} />
             <Detail label="Year" value={motorcycle.year.toString()} />
-            <Detail label="VIN" value={motorcycle.vin || "N/A"} />
+            <div className="col-span-2">
+              <span className="block text-sm text-gray-500 mb-1">VIN</span>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-mono font-medium text-gray-800">{motorcycle.vin || "N/A"}</span>
+                {motorcycle.vin && (
+                  <button
+                    onClick={checkVin}
+                    disabled={vinLoading}
+                    className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+                  >
+                    {vinLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                    {vinLoading ? "Checking…" : "Check VIN"}
+                  </button>
+                )}
+              </div>
+
+              {vinError && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {vinError}
+                </div>
+              )}
+
+              {vinData && (
+                <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-green-600" />
+                    <span className="font-semibold text-green-800">
+                      {vinData.isValid ? "VIN Verified" : "VIN Invalid"}
+                    </span>
+                    <span className="text-xs text-green-600">{vinData.errorText}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-700">
+                    {vinData.make           && <VinDetail label="Make"          value={vinData.make} />}
+                    {vinData.model          && <VinDetail label="Model"         value={vinData.model} />}
+                    {vinData.modelYear      && <VinDetail label="Year"          value={vinData.modelYear} />}
+                    {vinData.series         && <VinDetail label="Series"        value={vinData.series} />}
+                    {vinData.vehicleType    && <VinDetail label="Type"          value={vinData.vehicleType} />}
+                    {vinData.bodyClass      && <VinDetail label="Body"          value={vinData.bodyClass} />}
+                    {vinData.fuelType       && <VinDetail label="Fuel"          value={vinData.fuelType} />}
+                    {vinData.displacementCC && <VinDetail label="Displacement"  value={`${vinData.displacementCC} cc`} />}
+                    {vinData.engineCylinders && <VinDetail label="Cylinders"   value={vinData.engineCylinders} />}
+                    {vinData.engineBrakeHp  && <VinDetail label="Horsepower"   value={`${vinData.engineBrakeHp} hp`} />}
+                    {vinData.plantCity      && <VinDetail label="Plant"         value={`${vinData.plantCity}, ${vinData.plantState}`} />}
+                    {vinData.manufacturerName && <VinDetail label="Manufacturer" value={vinData.manufacturerName} />}
+                  </div>
+                  {vinData.additionalErrorText && (
+                    <p className="text-xs text-amber-600 border-t border-green-200 pt-2">{vinData.additionalErrorText}</p>
+                  )}
+                </div>
+              )}
+            </div>
             <Detail label="Color" value={motorcycle.color || "N/A"} />
             <Detail label="Engine" value={(motorcycle as any).build?.engine || motorcycle.engine_size || "N/A"} />
             <Detail label="Transmission" value={(motorcycle as any).build?.transmission || "N/A"} />
@@ -238,6 +308,15 @@ export default function Motocycle() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function VinDetail({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <span className="block text-xs text-gray-500">{label}</span>
+      <span className="font-medium text-gray-800">{value}</span>
     </div>
   );
 }
