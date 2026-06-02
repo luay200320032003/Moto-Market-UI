@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useLocation, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
 import { Motorcycle } from "../entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
+import { getStoredToken } from "../utils/auth";
 import API from "../api";
 
 const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
@@ -19,6 +20,7 @@ export default function Motocycle() {
   const [vinError, setVinError] = useState("");
 
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const motorcycleId = searchParams.get("id");
   const isListing = searchParams.get("type") === "listing";
 
@@ -178,19 +180,48 @@ export default function Motocycle() {
             <Detail label="Year" value={motorcycle.year.toString()} />
             <div className="col-span-2">
               <span className="block text-sm text-gray-500 mb-1">VIN</span>
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="font-mono font-medium text-gray-800">{motorcycle.vin || "N/A"}</span>
-                {motorcycle.vin && (
-                  <button
-                    onClick={checkVin}
-                    disabled={vinLoading}
-                    className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
-                  >
-                    {vinLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                    {vinLoading ? "Checking…" : "Check VIN"}
-                  </button>
-                )}
-              </div>
+
+              {motorcycle.vin ? (
+                getStoredToken() ? (
+                  /* Logged in — show full VIN + Check VIN button */
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-mono font-medium text-gray-800">{motorcycle.vin}</span>
+                    <button
+                      onClick={checkVin}
+                      disabled={vinLoading}
+                      className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
+                    >
+                      {vinLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                      {vinLoading ? "Checking…" : "Check VIN"}
+                    </button>
+                  </div>
+                ) : (
+                  /* Not logged in — masked VIN with login prompt */
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
+                      <span className="text-sm font-semibold text-green-700">VIN Verified</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
+                      <span className="font-mono font-medium text-gray-800 tracking-wider">
+                        {motorcycle.vin.slice(0, 8)}{"*".repeat(motorcycle.vin.length - 8)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
+                      <Link
+                        to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`}
+                        className="text-sm text-red-600 hover:underline font-medium"
+                      >
+                        Click to reveal full VIN (requires login)
+                      </Link>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <span className="font-medium text-gray-500">N/A</span>
+              )}
 
               {vinError && (
                 <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">

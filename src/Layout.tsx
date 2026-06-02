@@ -54,10 +54,11 @@ export default function Layout() {
     navigate(`/login?${searchParams.toString()}`, { state: { accountType } });
   };
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     clearStoredToken();
     clearStoredUser();
     setUser(null);
+    navigate("/");
   };
 
 const isActive = (pageName: string): boolean => {
