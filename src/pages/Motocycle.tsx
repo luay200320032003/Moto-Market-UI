@@ -18,6 +18,9 @@ export default function Motocycle() {
   const [vinData, setVinData] = useState<any>(null);
   const [vinLoading, setVinLoading] = useState(false);
   const [vinError, setVinError] = useState("");
+  const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [contactSent, setContactSent] = useState(false);
+  const [contactSending, setContactSending] = useState(false);
 
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -38,7 +41,7 @@ export default function Motocycle() {
         setMotorcycle(bike);
 
         // Fetch similar bikes
-        const bikes = await getMotorcycles({ limit: 4 });
+        const { motorcycles: bikes } = await getMotorcycles({ limit: 4 });
         setSimilar(bikes.filter((b) => b.id.toString() !== motorcycleId).slice(0, 4));
       } catch (err: any) {
         console.error("Error fetching motorcycle:", err);
@@ -281,35 +284,91 @@ export default function Motocycle() {
             {(motorcycle as any).dealer?.city}, {(motorcycle as any).dealer?.state}{" "}
             {(motorcycle as any).dealer?.zip}
           </p>
-          <a
-            href={`https://${(motorcycle as any).dealer?.website}`}
-            target="_blank"
-            rel="noreferrer"
-            className="text-blue-600 hover:underline mt-2 inline-block"
-          >
-            Visit Dealer Website
-          </a>
+          <div className="flex flex-col gap-1 mt-2">
+            {motorcycle.dealer_website && (
+              <a href={`https://${motorcycle.dealer_website}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
+                Visit Dealer Website
+              </a>
+            )}
+            {motorcycle.vdp_url && (
+              <a href={motorcycle.vdp_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm">
+                View Original Listing
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Contact Form */}
         <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
           <h2 className="text-xl font-semibold mb-3 text-gray-800">Contact Dealer</h2>
-          <form className="space-y-3">
-            <input type="text" placeholder="Full Name *" className="border p-2 rounded-md w-full" />
-            <input type="email" placeholder="Email *" className="border p-2 rounded-md w-full" />
-            <input type="tel" placeholder="Phone (optional)" className="border p-2 rounded-md w-full" />
-            <textarea
-              rows={3}
-              placeholder={`I'm interested in the ${motorcycle.title}`}
-              className="border p-2 rounded-md w-full"
-            ></textarea>
-            <button
-              type="submit"
-              className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 w-full transition"
+
+          {contactSent ? (
+            <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Your message has been sent! The dealer will contact you soon.</span>
+            </div>
+          ) : (
+            <form
+              className="space-y-3"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setContactSending(true);
+                try {
+                  await API.post("/api/contact", {
+                    motorcycleId: Number(motorcycleId),
+                    source: motorcycle.source ?? "market",
+                    senderName: contactForm.name,
+                    senderEmail: contactForm.email,
+                    senderPhone: contactForm.phone || null,
+                    message: contactForm.message,
+                  });
+                  setContactSent(true);
+                } catch (err: any) {
+                  alert(err?.response?.data?.message || err?.message || "Failed to send message.");
+                } finally {
+                  setContactSending(false);
+                }
+              }}
             >
-              Send Message
-            </button>
-          </form>
+              <input
+                type="text"
+                placeholder="Full Name *"
+                value={contactForm.name}
+                onChange={(e) => setContactForm((f) => ({ ...f, name: e.target.value }))}
+                required
+                className="border p-2 rounded-md w-full text-sm"
+              />
+              <input
+                type="email"
+                placeholder="Email *"
+                value={contactForm.email}
+                onChange={(e) => setContactForm((f) => ({ ...f, email: e.target.value }))}
+                required
+                className="border p-2 rounded-md w-full text-sm"
+              />
+              <input
+                type="tel"
+                placeholder="Phone (optional)"
+                value={contactForm.phone}
+                onChange={(e) => setContactForm((f) => ({ ...f, phone: e.target.value }))}
+                className="border p-2 rounded-md w-full text-sm"
+              />
+              <textarea
+                rows={3}
+                placeholder={`I'm interested in the ${motorcycle.title}`}
+                value={contactForm.message}
+                onChange={(e) => setContactForm((f) => ({ ...f, message: e.target.value }))}
+                className="border p-2 rounded-md w-full text-sm"
+              />
+              <button
+                type="submit"
+                disabled={contactSending}
+                className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 w-full transition disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {contactSending ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : "Send Message"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
 

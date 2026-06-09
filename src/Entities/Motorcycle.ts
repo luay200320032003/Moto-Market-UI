@@ -22,6 +22,8 @@ export interface Motorcycle {
   image: string;
   source?: string;
   vin?: string;
+  dealer_website?: string;
+  vdp_url?: string;
 }
 
 // Example function to fetch motorcycles (replace with real API call as needed)

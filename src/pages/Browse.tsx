@@ -19,21 +19,15 @@ import { getMotorcycles } from "../services/MotorcycleService";
 export default function Browse() {
   const location = useLocation();
 
-  // States
+  const PAGE_SIZE = 12;
+
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
-  const [filteredMotorcycles, setFilteredMotorcycles] = useState<Motorcycle[]>(
-    []
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
-
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const maxRecords = 600; // upper safety cap
-  const uiPageSize = 12; // cards shown per UI page
-  const fetchPageSize = 100; // records per API call
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -44,115 +38,36 @@ export default function Browse() {
   const [yearRange, setYearRange] = useState<[number, number]>([1990, 2030]);
   const [sortBy, setSortBy] = useState("newest");
 
-  // Fetch motorcycles from backend (up to maxRecords)
+  // Reset to page 1 when filters change
+  useEffect(() => { setCurrentPage(1); }, [selectedMake, selectedCategory, selectedCondition, priceRange, yearRange, sortBy, searchQuery]);
+
+  // Fetch one page from the API
   useEffect(() => {
     let cancelled = false;
-
-    const fetchMotorcycles = async () => {
+    const fetchPage = async () => {
       setIsLoading(true);
-      setMotorcycles([]);
       setError(null);
-
       try {
-        const params = Object.fromEntries(new URLSearchParams(location.search));
-        let allBikes: Motorcycle[] = [];
-        let page = 1;
-
-        while (allBikes.length < maxRecords) {
-          const bikes: Motorcycle[] = await getMotorcycles({ ...params, page, pageSize: fetchPageSize });
-
-          if (cancelled) return;
-          if (!bikes || bikes.length === 0) break;
-
-          allBikes = [...allBikes, ...bikes];
-          setMotorcycles([...allBikes]);  // show results immediately after each page
-          setIsLoading(false);            // remove skeleton after first page arrives
-
-          if (bikes.length < fetchPageSize) break;
-          if (allBikes.length >= maxRecords) break;
-          page++;
-        }
+        const urlParams = Object.fromEntries(new URLSearchParams(location.search));
+        const { motorcycles: bikes, hasNextPage: more } = await getMotorcycles({
+          ...urlParams,
+          page: currentPage,
+          pageSize: PAGE_SIZE,
+        });
+        if (cancelled) return;
+        setMotorcycles(bikes);
+        setHasNextPage(more);
       } catch (err) {
         if (cancelled) return;
-        const errorMsg = err instanceof Error ? err.message : "Failed to load motorcycles";
-        setError(errorMsg);
+        setError(err instanceof Error ? err.message : "Failed to load motorcycles");
         setMotorcycles([]);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     };
-
-    fetchMotorcycles();
+    fetchPage();
     return () => { cancelled = true; };
-  }, [location.search]);
-
-  // Apply filters
-  useEffect(() => {
-    let filtered = [...motorcycles];
-
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (bike) =>
-          bike.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          bike.make?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          bike.model?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          bike.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    if (selectedMake !== "all")
-      filtered = filtered.filter((bike) => bike.make === selectedMake);
-    if (selectedCategory !== "any")
-      filtered = filtered.filter((bike) => bike.category === selectedCategory);
-    if (selectedCondition !== "any")
-      filtered = filtered.filter(
-        (bike) => bike.condition === selectedCondition
-      );
-
-    filtered = filtered.filter(
-      (bike) =>
-        bike.price >= priceRange[0] &&
-        bike.price <= priceRange[1] &&
-        bike.year >= yearRange[0] &&
-        bike.year <= yearRange[1]
-    );
-
-    switch (sortBy) {
-      case "price-low":
-        filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
-        break;
-      case "price-high":
-        filtered.sort((a, b) => (b.price || 0) - (a.price || 0));
-        break;
-      case "year-new":
-        filtered.sort((a, b) => (b.year || 0) - (a.year || 0));
-        break;
-      case "year-old":
-        filtered.sort((a, b) => (a.year || 0) - (b.year || 0));
-        break;
-      case "mileage-low":
-        filtered.sort((a, b) => (a.mileage || 0) - (b.mileage || 0));
-        break;
-      default:
-        filtered.sort(
-          (a, b) =>
-            new Date(b.created_date!).getTime() -
-            new Date(a.created_date!).getTime()
-        );
-    }
-
-    setFilteredMotorcycles(filtered);
-    setCurrentPage(1); // reset to first page on filter change
-  }, [
-    motorcycles,
-    searchQuery,
-    selectedMake,
-    selectedCategory,
-    selectedCondition,
-    priceRange,
-    yearRange,
-    sortBy,
-  ]);
+  }, [currentPage, location.search]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -164,10 +79,30 @@ export default function Browse() {
     setSortBy("newest");
   };
 
-  // Slice filtered motorcycles for current UI page
-  const startIndex = (currentPage - 1) * uiPageSize;
-  const endIndex = startIndex + uiPageSize;
-  const pagedMotorcycles = filteredMotorcycles.slice(startIndex, endIndex);
+  // Client-side filter + sort on current page
+  const pagedMotorcycles = motorcycles
+    .filter((bike) => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (![bike.title, bike.make, bike.model, bike.description].some((f) => f?.toLowerCase().includes(q))) return false;
+      }
+      if (selectedMake !== "all" && bike.make !== selectedMake) return false;
+      if (selectedCategory !== "any" && bike.category !== selectedCategory) return false;
+      if (selectedCondition !== "any" && bike.condition !== selectedCondition) return false;
+      if (bike.price < priceRange[0] || bike.price > priceRange[1]) return false;
+      if (bike.year < yearRange[0] || bike.year > yearRange[1]) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "price-low":    return (a.price || 0) - (b.price || 0);
+        case "price-high":   return (b.price || 0) - (a.price || 0);
+        case "year-new":     return (b.year || 0) - (a.year || 0);
+        case "year-old":     return (a.year || 0) - (b.year || 0);
+        case "mileage-low":  return (a.mileage || 0) - (b.mileage || 0);
+        default:             return new Date(b.created_date!).getTime() - new Date(a.created_date!).getTime();
+      }
+    });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -179,7 +114,7 @@ export default function Browse() {
               Browse Motorcycles
             </h1>
             <p className="text-gray-600">
-              {filteredMotorcycles.length} motorcycles available
+              {pagedMotorcycles.length} motorcycles on this page
             </p>
           </div>
 
@@ -313,40 +248,19 @@ export default function Browse() {
           )}
 
           {/* Pagination */}
-          {(() => {
-            const totalPages = Math.ceil(filteredMotorcycles.length / uiPageSize);
-            if (totalPages <= 1) return null;
-
-            const windowSize = 10;
-            const windowStart = Math.max(1, Math.min(currentPage - Math.floor(windowSize / 2), totalPages - windowSize + 1));
-            const windowEnd = Math.min(totalPages, windowStart + windowSize - 1);
-            const pages = Array.from({ length: windowEnd - windowStart + 1 }, (_, i) => windowStart + i);
-
-            return (
-              <div className="flex items-center gap-2 mt-8 w-full border-t border-gray-200 pt-6">
-                <Button variant="outline" className="shrink-0" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
-                  ← Prev
-                </Button>
-                <div className="flex flex-1 justify-center items-center gap-1">
-                  {pages.map((p) => (
-                    <Button
-                      key={p}
-                      size="sm"
-                      onClick={() => setCurrentPage(p)}
-                      className={currentPage === p
-                        ? "bg-red-600 hover:bg-red-700 text-white"
-                        : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"}
-                    >
-                      {p}
-                    </Button>
-                  ))}
-                </div>
-                <Button variant="outline" className="shrink-0" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)}>
-                  Next →
-                </Button>
-              </div>
-            );
-          })()}
+          {(currentPage > 1 || hasNextPage) && (
+            <div className="flex items-center justify-between mt-8 w-full border-t border-gray-200 pt-6">
+              <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)}>
+                ← Prev
+              </Button>
+              <span className="text-sm text-gray-600">
+                Page <span className="font-semibold text-gray-900">{currentPage}</span>
+              </span>
+              <Button variant="outline" disabled={!hasNextPage} onClick={() => setCurrentPage((p) => p + 1)}>
+                Next →
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

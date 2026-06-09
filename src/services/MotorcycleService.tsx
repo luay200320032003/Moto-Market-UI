@@ -57,6 +57,8 @@ function mapToMotorcycle(m: any): Motorcycle {
     image: mainImage,
     source: m.source ?? undefined,
     vin: m.vin ?? undefined,
+    dealer_website: dealer.websit ?? dealer.website ?? undefined,
+    vdp_url: m.vdpUrl ?? undefined,
   };
 }
 
@@ -65,31 +67,30 @@ function mapToMotorcycle(m: any): Motorcycle {
  */
 export async function getMotorcycles(
   params: GetMotorcyclesParams = {}
-): Promise<Motorcycle[]> {
+): Promise<{ motorcycles: Motorcycle[]; hasNextPage: boolean }> {
   try {
     const { data }: { data: any } = await API.get("/api/marketplace", { params });
 
-    let motorcyclesArray: any[] = [];
-    if (Array.isArray(data?.data)) {
-      motorcyclesArray = data.data;
-    } else if (Array.isArray(data?.motorcycles)) {
-      motorcyclesArray = data.motorcycles;
-    } else if (Array.isArray(data)) {
-      motorcyclesArray = data;
-    } else {
-      return [];
-    }
+    const motorcyclesArray: any[] =
+      Array.isArray(data?.items)       ? data.items       :
+      Array.isArray(data?.data)        ? data.data        :
+      Array.isArray(data?.motorcycles) ? data.motorcycles :
+      Array.isArray(data)              ? data             : [];
+
+    const hasNextPage: boolean = data?.hasNextPage ?? false;
 
     const mapped = motorcyclesArray.map((m, i) => ({ ...mapToMotorcycle(m), _key: m.externalId ?? `${m.source ?? "unknown"}-${m.id ?? i}` }));
     const seen = new Set<string>();
-    return mapped.filter((m) => {
+    const motorcycles = mapped.filter((m) => {
       if (seen.has(m._key)) return false;
       seen.add(m._key);
       return true;
     });
+
+    return { motorcycles, hasNextPage };
   } catch (error: any) {
     console.error("Error fetching motorcycles:", error?.message);
-    return [];
+    return { motorcycles: [], hasNextPage: false };
   }
 }
 
