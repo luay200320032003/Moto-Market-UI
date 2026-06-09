@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useLocation, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
 import { Motorcycle } from "../entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
 import { getStoredToken } from "../utils/auth";
@@ -21,6 +21,9 @@ export default function Motocycle() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [contactSent, setContactSent] = useState(false);
   const [contactSending, setContactSending] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string>("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
 
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -272,6 +275,100 @@ export default function Motocycle() {
           </div>
         </div>
       </div>
+
+      {/* AI Price Negotiation Assistant */}
+      {(() => {
+        const daysListed = motorcycle.created_date
+          ? Math.floor((Date.now() - new Date(motorcycle.created_date).getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+
+        const handleAiSuggest = async () => {
+          setAiLoading(true);
+          setAiError("");
+          setAiSuggestion("");
+          try {
+            const { data } = await API.post("/api/ai/price-suggestion", {
+              motorcycleId: Number(motorcycleId),
+              heading: motorcycle.title,
+              price: motorcycle.price,
+              msrp: (motorcycle as any).msrp ?? null,
+              mileage: motorcycle.mileage ?? null,
+              year: motorcycle.year,
+              make: motorcycle.make,
+              model: motorcycle.model,
+              condition: motorcycle.condition,
+              color: motorcycle.color ?? null,
+              daysListed,
+            });
+            setAiSuggestion(data.suggestion ?? data.message ?? JSON.stringify(data));
+          } catch (err: any) {
+            setAiError(err?.response?.data?.message || err?.message || "AI suggestion failed.");
+          } finally {
+            setAiLoading(false);
+          }
+        };
+
+        return (
+          <div className="mt-8 rounded-2xl overflow-hidden shadow-sm border border-purple-200">
+            <div className="bg-gradient-to-r from-violet-600 to-purple-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3 text-white">
+                <Sparkles className="h-5 w-5" />
+                <span className="font-bold text-lg">AI Price Negotiation Assistant</span>
+              </div>
+              <span className="text-purple-200 text-xs">Powered by Claude</span>
+            </div>
+
+            <div className="bg-white px-6 py-5">
+              {/* Stats row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
+                  <p className="text-xs text-gray-500">Asking Price</p>
+                  <p className="text-lg font-bold text-gray-900">${motorcycle.price.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
+                  <p className="text-xs text-gray-500">Days Listed</p>
+                  <p className="text-lg font-bold text-gray-900">{daysListed ?? "—"}</p>
+                </div>
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
+                  <p className="text-xs text-gray-500">Mileage</p>
+                  <p className="text-lg font-bold text-gray-900">{motorcycle.mileage ? `${motorcycle.mileage.toLocaleString()} mi` : "—"}</p>
+                </div>
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
+                  <p className="text-xs text-gray-500">Condition</p>
+                  <p className="text-lg font-bold text-gray-900 capitalize">{motorcycle.condition}</p>
+                </div>
+              </div>
+
+              {!aiSuggestion && !aiLoading && !aiError && (
+                <p className="text-sm text-gray-500 mb-4">
+                  Claude analyses the price, mileage, days on market, and condition to suggest a fair offer you can make to the dealer.
+                </p>
+              )}
+
+              {aiError && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 mb-4">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {aiError}
+                </div>
+              )}
+
+              {aiSuggestion && (
+                <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-4 text-sm text-gray-800 mb-4 whitespace-pre-wrap leading-relaxed">
+                  {aiSuggestion}
+                </div>
+              )}
+
+              <button
+                onClick={handleAiSuggest}
+                disabled={aiLoading}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 px-5 py-2.5 text-sm font-semibold text-white hover:from-violet-700 hover:to-purple-800 disabled:opacity-60 transition-all"
+              >
+                {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysing…</> : <><Sparkles className="h-4 w-4" /> {aiSuggestion ? "Re-analyse" : "Get AI Offer Suggestion"}</>}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Dealer Info */}
       <div className="mt-10 grid md:grid-cols-2 gap-6">
