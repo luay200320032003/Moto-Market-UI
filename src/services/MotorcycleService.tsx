@@ -59,6 +59,14 @@ function mapToMotorcycle(m: any): Motorcycle {
     vin: m.vin ?? undefined,
     dealer_website: dealer.websit ?? dealer.website ?? undefined,
     vdp_url: m.vdpUrl ?? undefined,
+    msrp: m.msrp ?? undefined,
+    trim: build.trim ?? undefined,
+    transmission: build.transmission ?? undefined,
+    vehicle_type: build.vehicleType ?? undefined,
+    engine_description: build.engine ?? undefined,
+    displacement_cc: m.displacementCC ?? build.displacementCC ?? undefined,
+    engine_cylinders: m.engineCylinders ?? build.engineCylinders ?? undefined,
+    horsepower: m.engineBrakeHp ?? build.engineBrakeHp ?? undefined,
   };
 }
 

@@ -24,6 +24,14 @@ export interface Motorcycle {
   vin?: string;
   dealer_website?: string;
   vdp_url?: string;
+  msrp?: number;
+  trim?: string;
+  transmission?: string;
+  vehicle_type?: string;
+  displacement_cc?: string;
+  engine_cylinders?: string;
+  horsepower?: string;
+  engine_description?: string;
 }
 
 // Example function to fetch motorcycles (replace with real API call as needed)

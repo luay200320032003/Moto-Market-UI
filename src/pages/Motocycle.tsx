@@ -114,7 +114,17 @@ export default function Motocycle() {
   const prev = () => goTo((photoIndex - 1 + photos.length) % photos.length);
   const next = () => goTo((photoIndex + 1) % photos.length);
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-gray-50 mt-8 rounded-2xl shadow-sm border border-gray-200">
+    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Back button */}
+      <button
+        onClick={() => window.history.back()}
+        className="inline-flex items-center gap-2 mb-6 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg active:scale-95 transition-all duration-200"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back to listings
+      </button>
+
       {/* Title & Price */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4">
         <h1 className="text-3xl font-bold text-gray-900">{motorcycle.title}</h1>
@@ -177,6 +187,7 @@ export default function Motocycle() {
         </div>
 
         {/* Motorcycle Specs */}
+        <div className="space-y-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
           <h2 className="text-xl font-semibold mb-3 text-gray-800">Specifications</h2>
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-gray-700">
@@ -266,13 +277,27 @@ export default function Motocycle() {
               )}
             </div>
             <Detail label="Color" value={motorcycle.color || "N/A"} />
-            <Detail label="Engine" value={(motorcycle as any).build?.engine || motorcycle.engine_size || "N/A"} />
-            <Detail label="Transmission" value={(motorcycle as any).build?.transmission || "N/A"} />
-            <Detail label="Drivetrain" value={(motorcycle as any).build?.drivetrain || "N/A"} />
+            <Detail label="Trim" value={motorcycle.trim || "N/A"} />
+            <Detail label="Transmission" value={motorcycle.transmission || "N/A"} />
             <Detail label="Fuel Type" value={motorcycle.fuel_type || "Gasoline"} />
             <Detail label="Condition" value={motorcycle.condition} />
-            <Detail label="MSRP" value={(motorcycle as any).msrp ? `$${(motorcycle as any).msrp}` : "N/A"} />
+            <Detail label="MSRP" value={motorcycle.msrp ? `$${motorcycle.msrp.toLocaleString()}` : "N/A"} />
           </div>
+        </div>
+
+        {/* Engine Details */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h2 className="text-xl font-semibold mb-3 text-gray-800">Engine Details</h2>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-gray-700">
+            <Detail label="Engine"         value={motorcycle.engine_description || "N/A"} />
+            <Detail label="Vehicle Type"   value={motorcycle.vehicle_type  || "N/A"} />
+            <Detail label="Displacement"   value={motorcycle.displacement_cc ? `${motorcycle.displacement_cc} cc` : "N/A"} />
+            <Detail label="Cylinders"      value={motorcycle.engine_cylinders || "N/A"} />
+            <Detail label="Horsepower"     value={motorcycle.horsepower ? `${motorcycle.horsepower} hp` : "N/A"} />
+            <Detail label="Engine Size"    value={motorcycle.engine_size ? `${motorcycle.engine_size} cc` : "N/A"} />
+            <Detail label="Transmission"   value={motorcycle.transmission  || "N/A"} />
+          </div>
+        </div>
         </div>
       </div>
 
@@ -358,13 +383,27 @@ export default function Motocycle() {
                 </div>
               )}
 
-              <button
-                onClick={handleAiSuggest}
-                disabled={aiLoading}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 px-5 py-2.5 text-sm font-semibold text-white hover:from-violet-700 hover:to-purple-800 disabled:opacity-60 transition-all"
-              >
-                {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysing…</> : <><Sparkles className="h-4 w-4" /> {aiSuggestion ? "Re-analyse" : "Get AI Offer Suggestion"}</>}
-              </button>
+              {getStoredToken() ? (
+                <button
+                  onClick={handleAiSuggest}
+                  disabled={aiLoading}
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 px-5 py-2.5 text-sm font-semibold text-white hover:from-violet-700 hover:to-purple-800 disabled:opacity-60 transition-all"
+                >
+                  {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysing…</> : <><Sparkles className="h-4 w-4" /> {aiSuggestion ? "Re-analyse" : "Get AI Offer Suggestion"}</>}
+                </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <button
+                    disabled
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-400 to-purple-500 px-5 py-2.5 text-sm font-semibold text-white opacity-50 cursor-not-allowed"
+                  >
+                    <Sparkles className="h-4 w-4" /> Get AI Offer Suggestion
+                  </button>
+                  <Link to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} className="text-sm text-violet-600 hover:underline font-medium">
+                    Sign in to use
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         );
@@ -495,6 +534,7 @@ export default function Motocycle() {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
