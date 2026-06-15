@@ -1,5 +1,6 @@
 import API from "../api";
-import { clearStoredToken, storeToken, storeUser } from "../utils/auth";
+import { clearStoredToken, parseJwtPayload, storeToken, storeUser } from "../utils/auth";
+import type { AuthUser } from "../utils/auth";
 
 interface LoginPayload {
   userNameOrEmail: string;
@@ -49,21 +50,32 @@ export async function login(payload: LoginPayload): Promise<string> {
   }
 
   storeToken(token);
-  // Try to capture profile returned by the backend and cache it
+  // Merge profile from response body + JWT claims so trial fields are always stored
   try {
-    const maybeUser = (data && (data as any).user) || (data && (data as any).data && (data as any).data.user) || (data && (data as any).profile) || (data && (data as any).data && (data as any).data.profile) || null;
-    if (maybeUser) {
-      const u = maybeUser as Record<string, any>;
-      const profile = {
-        email: u.email ?? u.emailAddress ?? undefined,
-        full_name: u.full_name ?? u.name ?? undefined,
-        firstName: u.firstName ?? u.first_name ?? u.given_name ?? undefined,
-        lastName: u.lastName ?? u.last_name ?? u.family_name ?? undefined,
-        avatarUrl: u.avatarUrl ?? u.avatar_url ?? u.picture ?? undefined,
-      };
-      try { storeUser(profile as any); } catch {}
-    }
-  } catch (err) {
+    const maybeUser = (data as any)?.user ?? (data as any)?.data?.user ?? (data as any)?.profile ?? (data as any)?.data?.profile ?? null;
+    const u: Record<string, any> = maybeUser ?? {};
+    const jwt: Record<string, unknown> = parseJwtPayload(token) ?? {};
+
+    const profile: AuthUser = {
+      email:    u.email ?? u.emailAddress ?? (jwt.email as string) ?? (jwt.unique_name as string) ?? undefined,
+      full_name: u.full_name ?? u.name ?? (jwt.name as string) ?? undefined,
+      firstName: u.firstName ?? u.first_name ?? u.given_name ?? undefined,
+      lastName:  u.lastName  ?? u.last_name  ?? u.family_name ?? undefined,
+      avatarUrl: u.avatarUrl ?? u.avatar_url ?? u.picture ?? undefined,
+      trialEndsAt:
+        u.trialEndsAt ?? u.trial_ends_at ??
+        (typeof jwt.trialEndsAt === "string" ? jwt.trialEndsAt : undefined) ??
+        (typeof jwt.trial_ends_at === "string" ? jwt.trial_ends_at : undefined),
+      hasActiveSubscription:
+        u.hasActiveSubscription ?? u.has_active_subscription ??
+        (jwt.hasActiveSubscription === true || jwt.hasActiveSubscription === "true"
+          ? true
+          : jwt.hasActiveSubscription === false || jwt.hasActiveSubscription === "false"
+            ? false
+            : undefined),
+    };
+    storeUser(profile);
+  } catch {
     // ignore
   }
 

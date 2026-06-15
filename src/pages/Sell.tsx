@@ -1,13 +1,13 @@
 import { FormEvent, useRef, useState } from "react";
-import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X } from "lucide-react";
+import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Components/ui/select";
-import { getStoredToken } from "../utils/auth";
+import { getStoredToken, getStoredUser, canCreateListing } from "../utils/auth";
+import type { AuthUser } from "../utils/auth";
 import { registerIndividual } from "../services/registerService";
 import { login } from "../services/authService";
 import API from "../api";
 
-const MAX_PHOTOS = 10;
 const STEPS = ["Details", "Price", "Description", "Contact", "Photos"];
 
 const makeOptions = [
@@ -59,8 +59,9 @@ const initialForm: SellFormState = {
 };
 
 const fmtLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
-const isValidVin = (v: string) => /^[A-HJ-NPR-Z0-9]{17}$/i.test(v);
+const isValidVin   = (v: string) => /^[A-HJ-NPR-Z0-9]{17}$/i.test(v);
 const isValidPhone = (v: string) => /^[+]?[(]?[0-9]{1,4}[)]?[-\s./0-9]{6,19}$/.test(v);
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 // ── Reusable field wrapper ────────────────────────────────────────────────────
 function Field({
@@ -88,10 +89,19 @@ const inputCls = "w-full border-0 bg-transparent p-0 text-[15px] font-medium tex
 const selectTriggerCls = "h-auto border-0 bg-transparent p-0 text-[15px] font-medium text-gray-900 shadow-none focus:ring-0 focus:ring-offset-0 [&>span]:truncate";
 
 export default function Sell() {
+  const [authUser, setAuthUser] = useState<AuthUser | null>(() => getStoredUser());
+
+  const isLoggedIn   = Boolean(getStoredToken());
+  // Not-yet-registered users get 4 photos; registered/logged-in users get 10
+  const maxPhotos    = isLoggedIn ? 10 : 4;
+  // Trial expiry check (subscription gate — separate from photo cap)
+  const trialExpired = isLoggedIn && authUser !== null && !canCreateListing(authUser);
+
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<SellFormState>(initialForm);
   const [vinError, setVinError] = useState("");
   const [phoneError, setPhoneError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const [photos, setPhotos] = useState<File[]>([]);
@@ -110,7 +120,7 @@ export default function Sell() {
 
   const handleFilesSelected = (files: FileList | null) => {
     if (!files) return;
-    const incoming = Array.from(files).slice(0, MAX_PHOTOS - photos.length);
+    const incoming = Array.from(files).slice(0, maxPhotos - photos.length);
     setPhotos((p) => [...p, ...incoming]);
     setPreviews((p) => [...p, ...incoming.map((f) => URL.createObjectURL(f))]);
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -147,6 +157,11 @@ export default function Sell() {
       setIsSubmitted(true);
       setShowModal(false);
     } catch (err: any) {
+      if (err?.response?.status === 402 && err?.response?.data?.code === "TRIAL_EXPIRED") {
+        setPublishError("Your free trial has ended. Subscribe to continue listing.");
+        setAuthUser(getStoredUser()); // re-read so the expired wall renders
+        return;
+      }
       const msg =
         err?.response?.data?.message ||
         err?.response?.data?.title ||
@@ -168,6 +183,7 @@ export default function Sell() {
     try {
       await registerIndividual({ firstName: parts[0] || "Seller", lastName: parts.slice(1).join(" ") || ".", email: modalEmail, password: modalPassword });
       await login({ userNameOrEmail: modalEmail, password: modalPassword });
+      setAuthUser(getStoredUser()); // refresh trial data before publishing
       await publishListing();
     } catch (err: any) {
       setModalError(err?.response?.data?.message || err?.response?.data?.title || err?.message || "Registration failed.");
@@ -177,8 +193,8 @@ export default function Sell() {
   const canAdvance = () => {
     if (step === 0) return form.make && form.model && form.year && form.category && form.condition && form.fuelType && !vinError;
     if (step === 1) return form.price && form.mileage && !phoneError;
-    if (step === 2) return form.title;
-    if (step === 3) return form.sellerName && form.contactEmail;
+    if (step === 2) return form.title && form.description.trim();
+    if (step === 3) return form.sellerName && form.contactEmail && !emailError && isValidEmail(form.contactEmail);
     return true;
   };
 
@@ -261,7 +277,7 @@ export default function Sell() {
       <Field label="Listing title" required>
         <input className={inputCls} value={form.title} onChange={(e) => set("title", e.target.value)} />
       </Field>
-      <Field label="Description">
+      <Field label="Description" required>
         <textarea
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
@@ -279,8 +295,17 @@ export default function Sell() {
       <Field label="Seller name" required>
         <input className={inputCls} value={form.sellerName} onChange={(e) => set("sellerName", e.target.value)} />
       </Field>
-      <Field label="Contact email" required>
-        <input className={inputCls} type="email" value={form.contactEmail} onChange={(e) => set("contactEmail", e.target.value)} />
+      <Field label="Contact email" required error={emailError}>
+        <input
+          className={inputCls}
+          type="email"
+          value={form.contactEmail}
+          onChange={(e) => {
+            const val = e.target.value;
+            set("contactEmail", val);
+            setEmailError(val.length > 0 && !isValidEmail(val) ? "Enter a valid email address" : "");
+          }}
+        />
       </Field>
       <Field label="Contact phone" error={phoneError} className="sm:col-span-2">
         <input
@@ -298,6 +323,15 @@ export default function Sell() {
 
   const renderPhotos = () => (
     <div className="space-y-4">
+      {!isLoggedIn && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <Clock className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <strong>Up to 4 photos</strong> before registering.{" "}
+            Create a free account at publish time to unlock up to 10 photos on future listings.
+          </span>
+        </div>
+      )}
       <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFilesSelected(e.target.files)} />
       <div className="grid grid-cols-5 gap-3">
         {previews.map((src, i) => (
@@ -309,7 +343,7 @@ export default function Sell() {
             </button>
           </div>
         ))}
-        {photos.length < MAX_PHOTOS && (
+        {photos.length < maxPhotos && (
           <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-red-400 hover:text-red-500 transition-colors">
             <Camera className="h-5 w-5" />
             <span className="text-[10px] font-medium">Add</span>
@@ -317,7 +351,9 @@ export default function Sell() {
         )}
       </div>
       <p className="text-xs text-gray-400">
-        {photos.length === 0 ? "Upload up to 10 photos. The first will be the main listing image." : `${photos.length} of ${MAX_PHOTOS} photos added.`}
+        {photos.length === 0
+          ? `Upload up to ${maxPhotos} photos. The first will be the main listing image.`
+          : `${photos.length} of ${maxPhotos} photos added.`}
       </p>
       {isSubmitted && (
         <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
@@ -332,6 +368,29 @@ export default function Sell() {
   );
 
   const stepContent = [renderDetails, renderPrice, renderDescription, renderContact, renderPhotos];
+
+  // Trial-expired wall — shown instead of the whole form
+  if (trialExpired) {
+    return (
+      <div className="min-h-[calc(100vh-6rem)] bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900 flex items-center justify-center py-10 px-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+            <AlertTriangle className="h-8 w-8 text-red-600" />
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">Free Trial Ended</h2>
+          <p className="mb-6 text-sm text-gray-500">
+            Your 1-month free trial has expired. Subscribe to keep creating listings and unlock unlimited photos.
+          </p>
+          <Button className="w-full rounded-xl bg-red-600 text-white hover:bg-red-700">
+            View Subscription Plans
+          </Button>
+          <p className="mt-4 text-xs text-gray-400">
+            Need help? Contact <a href="mailto:support@mototrade.com" className="text-red-600 hover:underline">support@mototrade.com</a>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-6rem)] bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900 py-10">
@@ -361,7 +420,13 @@ export default function Sell() {
         <div className="rounded-2xl bg-white p-8 shadow-2xl">
           <h2 className="mb-1 text-xl font-bold text-gray-900">{STEPS[step]}</h2>
           <p className="mb-6 text-sm text-gray-400">
-            {["Enter your motorcycle's basic details.", "Set your asking price and mileage.", "Write a title and description.", "How should buyers reach you?", "Add up to 10 photos. First photo is the main image."][step]}
+            {[
+            "Enter your motorcycle's basic details.",
+            "Set your asking price and mileage.",
+            "Write a title and description. Description is required if you add photos.",
+            "How should buyers reach you?",
+            isLoggedIn ? "Add up to 10 photos. First photo is the main image." : "Add up to 4 photos. Register to unlock up to 10 on future listings.",
+          ][step]}
           </p>
 
           {stepContent[step]()}
