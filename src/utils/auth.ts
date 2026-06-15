@@ -8,6 +8,31 @@ export interface AuthUser {
   lastName?: string;
   avatarUrl?: string;
   role?: string;
+  trialEndsAt?: string;
+  hasActiveSubscription?: boolean;
+}
+
+export function isTrialActive(user: AuthUser | null): boolean {
+  if (!user?.trialEndsAt) return false;
+  return new Date(user.trialEndsAt) > new Date();
+}
+
+/** Returns days remaining in trial (0 if expired or no trial data). */
+export function trialDaysLeft(user: AuthUser | null): number {
+  if (!user?.trialEndsAt) return 0;
+  const diff = new Date(user.trialEndsAt).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / 86_400_000));
+}
+
+/**
+ * Returns true if the user is allowed to create listings.
+ * Falls back to true when trialEndsAt is absent (backend not yet updated).
+ */
+export function canCreateListing(user: AuthUser | null): boolean {
+  if (!user) return false;
+  if (user.hasActiveSubscription) return true;
+  if (user.trialEndsAt) return isTrialActive(user);
+  return true; // no trial data — don't block until backend sends it
 }
 
 export function getStoredToken(): string | null {
@@ -95,5 +120,17 @@ export function getUserFromToken(token: string | null): AuthUser | null {
         ? (payload["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] as string)
         : undefined;
 
-  return { email, full_name: fullName, role };
+  const trialEndsAt =
+    typeof payload.trialEndsAt === "string" ? payload.trialEndsAt :
+    typeof payload.trial_ends_at === "string" ? payload.trial_ends_at : undefined;
+
+  const hasActiveSubscription =
+    payload.hasActiveSubscription === true || payload.hasActiveSubscription === "true" ||
+    payload.has_active_subscription === true || payload.has_active_subscription === "true"
+      ? true
+      : (payload.hasActiveSubscription === false || payload.hasActiveSubscription === "false" ||
+         payload.has_active_subscription === false || payload.has_active_subscription === "false"
+           ? false : undefined);
+
+  return { email, full_name: fullName, role, trialEndsAt, hasActiveSubscription };
 }

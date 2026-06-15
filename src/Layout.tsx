@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2 } from "lucide-react";
+import { Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2, Bike } from "lucide-react";
 import { Button } from "./Components/ui/button";
 import { Outlet } from "react-router-dom";
-import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser } from "./utils/auth";
+import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser, isTrialActive, trialDaysLeft } from "./utils/auth";
 //import { User as UserEntity } from "./Entities/User";
 import {
   DropdownMenu,
@@ -44,6 +44,10 @@ export default function Layout() {
     setUser(cached ?? getUserFromToken(token));
     setIsLoading(false);
   }, [location.pathname, location.search]);
+
+  const storedUser = getStoredUser();
+  const onTrial = isTrialActive(storedUser);
+  const daysLeft = trialDaysLeft(storedUser);
 
   const handleLogin = (accountType: LoginAccountType) => {
     const searchParams = new URLSearchParams({
@@ -100,9 +104,20 @@ const isActive = (pageName: string): boolean => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {onTrial && (
+                          <div className="px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 rounded-t-md border-b border-amber-100">
+                            Trial: {daysLeft > 0 ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left` : "expires today"}
+                          </div>
+                        )}
                         <DropdownMenuItem>
                           <User className="w-4 h-4 mr-2" />
                           My Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/my-listings" className="flex items-center w-full">
+                            <Bike className="w-4 h-4 mr-2" />
+                            My Listings
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Heart className="w-4 h-4 mr-2" />
