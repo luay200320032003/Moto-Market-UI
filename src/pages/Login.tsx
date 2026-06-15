@@ -16,6 +16,7 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSsoSubmitting, setIsSsoSubmitting] = useState(false);
 
+  
   const accountType =
     searchParams.get("accountType") === "dealer"
       ? "dealer"
