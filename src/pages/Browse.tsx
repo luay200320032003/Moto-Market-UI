@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Motorcycle } from "../entities/Motorcycle";
-import { useLocation } from "react-router-dom";
-import { Search, Grid, List, SlidersHorizontal } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { Search, Grid, List, SlidersHorizontal, Bike } from "lucide-react";
+import { getStoredToken } from "../utils/auth";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import {
@@ -18,6 +19,7 @@ import { getMotorcycles } from "../services/MotorcycleService";
 
 export default function Browse() {
   const location = useLocation();
+  const isLoggedIn = Boolean(getStoredToken());
 
   const PAGE_SIZE = 12;
 
@@ -114,7 +116,9 @@ export default function Browse() {
               Browse Motorcycles
             </h1>
             <p className="text-gray-600">
-              {pagedMotorcycles.length} motorcycles on this page
+              {isLoading
+                ? "Loading…"
+                : `${pagedMotorcycles.length} bike${pagedMotorcycles.length !== 1 ? "s" : ""} available${hasNextPage ? " · more on next page" : ""}`}
             </p>
           </div>
 
@@ -177,6 +181,21 @@ export default function Browse() {
           </div>
         </div>
       </div>
+
+      {isLoggedIn && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+          <div className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2.5 shadow-md">
+            <Bike className="h-4 w-4 text-white shrink-0" />
+            <p className="text-sm font-medium text-white">Ready to sell your bike?</p>
+            <Link
+              to="/my-listings"
+              className="rounded-lg bg-white/15 border border-white/20 px-3 py-1 text-xs font-bold text-white hover:bg-white/25 transition-colors whitespace-nowrap"
+            >
+              My Garage →
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-8">
         {/* Sidebar Filters - Desktop */}

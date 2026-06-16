@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { PlusCircle, Bike, MapPin, Calendar, DollarSign, AlertCircle } from "lucide-react";
+import { PlusCircle, Bike, MapPin, Calendar, DollarSign, AlertCircle, Clock, Lock } from "lucide-react";
 import { Button } from "../Components/ui/button";
-import { getStoredToken } from "../utils/auth";
+import { getStoredToken, getStoredUser, isInGracePeriod, graceDaysLeft, isListingsBlocked, isTrialActive, trialDaysLeft } from "../utils/auth";
 import API from "../api";
 
 interface MyListing {
@@ -36,6 +36,25 @@ export default function MyListings() {
   const [listings, setListings] = useState<MyListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const DEMO_BLOCKED = true; // ← flip to false to disable demo
+
+  const authUser   = getStoredUser();
+  const inGrace    = isInGracePeriod(authUser);
+  const daysLeft   = graceDaysLeft(authUser);
+  const blocked    = DEMO_BLOCKED || isListingsBlocked(authUser);
+  const onTrial    = !DEMO_BLOCKED && isTrialActive(authUser);
+  const trialLeft  = trialDaysLeft(authUser);
+
+  // Badge shown on every card
+  // Falls back to "Trial active" when backend hasn't sent trialEndsAt yet
+  const cardBadge: { label: string; cls: string } | null =
+    blocked   ? null :
+    inGrace   ? { label: `${daysLeft}d grace left`,  cls: "bg-amber-100 text-amber-700" } :
+    onTrial   ? { label: `${trialLeft}d trial left`, cls: "bg-blue-100 text-blue-700"   } :
+    !authUser?.hasActiveSubscription
+              ? { label: "Trial active",              cls: "bg-blue-100 text-blue-700"   } :
+    null;
 
   useEffect(() => {
     if (!getStoredToken()) {
@@ -88,19 +107,66 @@ export default function MyListings() {
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Listings</h1>
+            <h1 className="text-2xl font-bold text-gray-900">My Garage</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {isLoading ? "Loading…" : `${listings.length} listing${listings.length !== 1 ? "s" : ""}`}
+              {isLoading ? "Loading…" : `${listings.length} bike${listings.length !== 1 ? "s" : ""} listed`}
             </p>
           </div>
-          <Link to="/Sell">
-            <Button className="bg-red-600 text-white hover:bg-red-700 flex items-center gap-2 rounded-xl">
+          {blocked ? (
+            <Button disabled className="flex items-center gap-2 rounded-xl opacity-50 cursor-not-allowed bg-gray-200 text-gray-500">
               <PlusCircle className="h-4 w-4" />
               New Listing
             </Button>
-          </Link>
+          ) : (
+            <Link to="/Sell">
+              <Button className="bg-red-600 text-white hover:bg-red-700 flex items-center gap-2 rounded-xl">
+                <PlusCircle className="h-4 w-4" />
+                New Listing
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
+
+      {/* Grace period warning banner */}
+      {inGrace && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-amber-800">
+              <Clock className="h-4 w-4 shrink-0" />
+              <span>
+                <strong>Grace period:</strong> your free trial has ended.{" "}
+                Your listings will be deactivated in{" "}
+                <strong>{daysLeft} day{daysLeft !== 1 ? "s" : ""}</strong> unless you subscribe.
+              </span>
+            </div>
+            <Link to="/subscribe" className="shrink-0">
+              <Button className="rounded-xl bg-amber-600 text-white hover:bg-amber-700 text-xs px-3 py-1.5 h-auto">
+                Subscribe Now
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Blocked banner */}
+      {blocked && (
+        <div className="bg-red-600">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm text-white">
+              <Lock className="h-4 w-4 shrink-0" />
+              <span>
+                <strong>Listings paused.</strong> Your grace period has expired. Subscribe to reactivate your listings.
+              </span>
+            </div>
+            <Link to="/subscribe" className="shrink-0">
+              <Button className="rounded-xl bg-white text-red-600 hover:bg-red-50 text-xs px-3 py-1.5 h-auto font-semibold">
+                Subscribe to Reactivate
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Error */}
@@ -149,25 +215,38 @@ export default function MyListings() {
         {!isLoading && listings.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {listings.map((listing) => (
-              <div key={listing.id} className="rounded-2xl bg-white shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
-                {/* Photo */}
-                <div className="relative h-44 bg-gray-100">
+              <div key={listing.id} className={`rounded-2xl bg-white shadow-sm overflow-hidden border transition-shadow ${blocked ? "border-gray-200 opacity-60 grayscale pointer-events-none" : "border-gray-100 hover:shadow-md"}`}>
+                {/* Photo — clickable (disabled when blocked) */}
+                <Link to={blocked ? "#" : `/Motorcycle?id=${listing.id}&type=listing`} className="block relative h-44 bg-gray-100">
                   <img
                     src={listing.imageUrls?.[0] ?? FALLBACK}
                     alt={listing.title}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover hover:opacity-90 transition-opacity"
                     onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
                   />
-                  {listing.status && (
+                  {blocked ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <div className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-700">
+                        <Lock className="h-3.5 w-3.5" /> Paused
+                      </div>
+                    </div>
+                  ) : listing.status && (
                     <span className={`absolute top-2 right-2 rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize ${statusColor(listing.status)}`}>
                       {listing.status}
                     </span>
                   )}
-                </div>
+                </Link>
 
                 {/* Info */}
                 <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 text-sm leading-snug truncate">{listing.title}</h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-gray-900 text-sm leading-snug truncate">{listing.title}</h3>
+                    {cardBadge && (
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${cardBadge.cls}`}>
+                        {cardBadge.label}
+                      </span>
+                    )}
+                  </div>
 
                   <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
                     {listing.year > 0 && (
@@ -187,17 +266,11 @@ export default function MyListings() {
                     )}
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between">
+                  <div className="mt-3">
                     <span className="flex items-center gap-0.5 text-base font-bold text-gray-900">
                       <DollarSign className="h-4 w-4 text-gray-400" />
                       {listing.price > 0 ? listing.price.toLocaleString() : "—"}
                     </span>
-                    <Link
-                      to={`/Motorcycle?id=${listing.id}&type=listing`}
-                      className="text-xs font-medium text-red-600 hover:text-red-700 hover:underline"
-                    >
-                      View listing →
-                    </Link>
                   </div>
                 </div>
               </div>

@@ -1,4 +1,5 @@
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Components/ui/select";
@@ -89,10 +90,19 @@ const inputCls = "w-full border-0 bg-transparent p-0 text-[15px] font-medium tex
 const selectTriggerCls = "h-auto border-0 bg-transparent p-0 text-[15px] font-medium text-gray-900 shadow-none focus:ring-0 focus:ring-offset-0 [&>span]:truncate";
 
 export default function Sell() {
+  const navigate = useNavigate();
   const [authUser, setAuthUser] = useState<AuthUser | null>(() => getStoredUser());
 
-  const isLoggedIn   = Boolean(getStoredToken());
-  // Not-yet-registered users get 4 photos; registered/logged-in users get 10
+  const isLoggedIn = Boolean(getStoredToken());
+
+  // Redirect unauthenticated users to login, returning here after sign-in
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login?returnTo=/Sell", { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
+  // Registered users get 10 photos; photo cap logic kept in sync if needed
   const maxPhotos    = isLoggedIn ? 10 : 4;
   // Trial expiry check (subscription gate — separate from photo cap)
   const trialExpired = isLoggedIn && authUser !== null && !canCreateListing(authUser);
@@ -332,7 +342,7 @@ export default function Sell() {
           </span>
         </div>
       )}
-      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFilesSelected(e.target.files)} />
+      {!isSubmitted && <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleFilesSelected(e.target.files)} />}
       <div className="grid grid-cols-5 gap-3">
         {previews.map((src, i) => (
           <div key={i} className="relative aspect-square">
@@ -343,7 +353,7 @@ export default function Sell() {
             </button>
           </div>
         ))}
-        {photos.length < maxPhotos && (
+        {!isSubmitted && photos.length < maxPhotos && (
           <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-red-400 hover:text-red-500 transition-colors">
             <Camera className="h-5 w-5" />
             <span className="text-[10px] font-medium">Add</span>
@@ -381,9 +391,11 @@ export default function Sell() {
           <p className="mb-6 text-sm text-gray-500">
             Your 1-month free trial has expired. Subscribe to keep creating listings and unlock unlimited photos.
           </p>
-          <Button className="w-full rounded-xl bg-red-600 text-white hover:bg-red-700">
-            View Subscription Plans
-          </Button>
+          <Link to="/subscribe" className="block">
+            <Button className="w-full rounded-xl bg-red-600 text-white hover:bg-red-700">
+              View Subscription Plans
+            </Button>
+          </Link>
           <p className="mt-4 text-xs text-gray-400">
             Need help? Contact <a href="mailto:support@mototrade.com" className="text-red-600 hover:underline">support@mototrade.com</a>
           </p>
@@ -432,20 +444,28 @@ export default function Sell() {
           {stepContent[step]()}
 
           {/* Nav buttons */}
-          <div className="mt-8 flex items-center justify-between">
-            <Button variant="outline" type="button" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="flex items-center gap-1 rounded-xl border-gray-300">
-              <ChevronLeft className="h-4 w-4" /> Back
-            </Button>
-            {step < STEPS.length - 1 ? (
-              <Button type="button" onClick={() => setStep((s) => s + 1)} disabled={!canAdvance()} className="flex items-center gap-1 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                Next <ChevronRight className="h-4 w-4" />
+          {isSubmitted ? (
+            <div className="mt-8 flex justify-center">
+              <Button type="button" onClick={() => navigate("/my-listings")} className="rounded-xl bg-red-600 text-white hover:bg-red-700 flex items-center gap-2">
+                View My Listings <ChevronRight className="h-4 w-4" />
               </Button>
-            ) : (
-              <Button type="button" onClick={handlePublish} disabled={isSubmitted} className="rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-                Publish Listing
+            </div>
+          ) : (
+            <div className="mt-8 flex items-center justify-between">
+              <Button variant="outline" type="button" onClick={() => setStep((s) => s - 1)} disabled={step === 0} className="flex items-center gap-1 rounded-xl border-gray-300">
+                <ChevronLeft className="h-4 w-4" /> Back
               </Button>
-            )}
-          </div>
+              {step < STEPS.length - 1 ? (
+                <Button type="button" onClick={() => setStep((s) => s + 1)} disabled={!canAdvance()} className="flex items-center gap-1 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Next <ChevronRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="button" onClick={handlePublish} className="rounded-xl bg-red-600 text-white hover:bg-red-700">
+                  Publish Listing
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

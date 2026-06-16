@@ -35,6 +35,32 @@ export function canCreateListing(user: AuthUser | null): boolean {
   return true; // no trial data — don't block until backend sends it
 }
 
+const GRACE_DAYS = 7;
+
+function graceEndDate(user: AuthUser): Date {
+  return new Date(new Date(user.trialEndsAt!).getTime() + GRACE_DAYS * 86_400_000);
+}
+
+/** True when trial has expired but the 7-day grace window is still open. */
+export function isInGracePeriod(user: AuthUser | null): boolean {
+  if (!user?.trialEndsAt || user.hasActiveSubscription) return false;
+  const now = new Date();
+  return now > new Date(user.trialEndsAt) && now <= graceEndDate(user);
+}
+
+/** Days remaining in the grace window (0 when none left). */
+export function graceDaysLeft(user: AuthUser | null): number {
+  if (!user?.trialEndsAt || user.hasActiveSubscription) return 0;
+  const diff = graceEndDate(user).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / 86_400_000));
+}
+
+/** True when both trial AND grace period have passed without a subscription. */
+export function isListingsBlocked(user: AuthUser | null): boolean {
+  if (!user?.trialEndsAt || user.hasActiveSubscription) return false;
+  return new Date() > graceEndDate(user);
+}
+
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_STORAGE_KEY);
 }

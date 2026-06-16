@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Sell from "./pages/Sell";
 import MyListings from "./pages/MyListings";
+import Subscribe from "./pages/Subscribe";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/Sell" element={<Sell />} />
           <Route path="/my-listings" element={<MyListings />} />
+          <Route path="/subscribe" element={<Subscribe />} />
         </Route>
       </Routes>
     </Router>
