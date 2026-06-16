@@ -3,12 +3,21 @@ import { useSearchParams, useLocation, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
 import { Motorcycle } from "../entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
-import { getStoredToken } from "../utils/auth";
+import { getStoredToken, getStoredUser, isInGracePeriod, graceDaysLeft, isListingsBlocked, isTrialActive, trialDaysLeft } from "../utils/auth";
 import API from "../api";
 
 const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
 
 export default function Motocycle() {
+  const DEMO_BLOCKED = true; // ← flip to false to disable demo
+
+  const authUser  = getStoredUser();
+  const inGrace   = isInGracePeriod(authUser);
+  const daysLeft  = graceDaysLeft(authUser);
+  const blocked   = DEMO_BLOCKED || isListingsBlocked(authUser);
+  const onTrial   = !DEMO_BLOCKED && isTrialActive(authUser);
+  const trialLeft = trialDaysLeft(authUser);
+
   const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +133,31 @@ export default function Motocycle() {
         <ChevronLeft className="h-4 w-4" />
         Back to listings
       </button>
+
+      {/* Trial / grace period banner — only on user's own listings */}
+      {isListing && (blocked || inGrace || onTrial) && (
+        <div className={`mb-6 flex items-center justify-between gap-4 rounded-2xl px-5 py-3.5 text-sm font-medium ${
+          blocked ? "bg-red-50 border border-red-200 text-red-700"
+          : inGrace ? "bg-amber-50 border border-amber-200 text-amber-700"
+          : "bg-blue-50 border border-blue-200 text-blue-700"
+        }`}>
+          <span>
+            {blocked
+              ? "Your listing is currently paused — subscribe to reactivate it."
+              : inGrace
+              ? `Grace period: ${daysLeft} day${daysLeft !== 1 ? "s" : ""} left before this listing is paused.`
+              : `Free trial: ${trialLeft} day${trialLeft !== 1 ? "s" : ""} remaining on your account.`}
+          </span>
+          {(blocked || inGrace) && (
+            <Link
+              to="/my-listings"
+              className="shrink-0 rounded-xl bg-white px-3 py-1.5 text-xs font-semibold shadow-sm hover:shadow transition-shadow border border-current"
+            >
+              {blocked ? "Subscribe" : "View My Garage"}
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Title & Price */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4">

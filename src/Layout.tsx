@@ -116,7 +116,7 @@ const isActive = (pageName: string): boolean => {
                         <DropdownMenuItem asChild>
                           <Link to="/my-listings" className="flex items-center w-full">
                             <Bike className="w-4 h-4 mr-2" />
-                            My Listings
+                            My Garage
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem>
