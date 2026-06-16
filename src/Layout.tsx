@@ -218,6 +218,17 @@ const isActive = (pageName: string): boolean => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              <Link
+                to="/subscribe"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors font-medium ${
+                  isActive("subscribe")
+                    ? "bg-red-50 text-red-600"
+                    : "text-gray-700 hover:text-red-600 hover:bg-gray-50"
+                }`}
+              >
+                Subscription
+              </Link>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="text-gray-700 hover:text-red-600 hover:bg-gray-50">
@@ -318,6 +329,16 @@ const isActive = (pageName: string): boolean => {
               >
                 <UserPlus className="w-5 h-5 mr-3" />
                 Register
+              </Link>
+
+              <Link
+                to="/subscribe"
+                className={`flex items-center px-3 py-2 rounded-lg ${
+                  isActive("subscribe") ? "bg-red-50 text-red-600" : "text-gray-700"
+                }`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Subscription
               </Link>
 
               <div className="border-t border-gray-200 my-2"></div>

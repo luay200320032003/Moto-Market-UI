@@ -73,6 +73,12 @@ export async function login(payload: LoginPayload): Promise<string> {
           : jwt.hasActiveSubscription === false || jwt.hasActiveSubscription === "false"
             ? false
             : undefined),
+      subscriptionPlan: (() => {
+        const raw = u.subscriptionPlan ?? u.subscription_plan ?? u.plan ??
+          jwt.subscriptionPlan ?? jwt.subscription_plan ?? jwt.plan;
+        const v = typeof raw === "string" ? raw.toLowerCase() : undefined;
+        return (v === "user" || v === "dealer") ? v : undefined;
+      })(),
     };
     storeUser(profile);
   } catch {

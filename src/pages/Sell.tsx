@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Components/ui/select";
-import { getStoredToken, getStoredUser, canCreateListing } from "../utils/auth";
+import { getStoredToken, getStoredUser, canCreateListing, maxPhotosForUser } from "../utils/auth";
 import type { AuthUser } from "../utils/auth";
 import { registerIndividual } from "../services/registerService";
 import { login } from "../services/authService";
@@ -102,8 +102,10 @@ export default function Sell() {
     }
   }, [isLoggedIn, navigate]);
 
-  // Registered users get 10 photos; photo cap logic kept in sync if needed
-  const maxPhotos    = isLoggedIn ? 10 : 4;
+  // null = unlimited (dealer plan); 0 = not logged in
+  const photoLimit = isLoggedIn ? maxPhotosForUser(authUser) : 0;
+  const maxPhotos  = photoLimit ?? 999; // unlimited stored as 999 internally
+  const isUnlimited = isLoggedIn && photoLimit === null;
   // Trial expiry check (subscription gate — separate from photo cap)
   const trialExpired = isLoggedIn && authUser !== null && !canCreateListing(authUser);
 
@@ -337,8 +339,8 @@ export default function Sell() {
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
           <Clock className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            <strong>Up to 4 photos</strong> before registering.{" "}
-            Create a free account at publish time to unlock up to 10 photos on future listings.
+            <strong>Sign in to add photos.</strong>{" "}
+            Photo uploads are only available to registered users.
           </span>
         </div>
       )}
@@ -353,7 +355,7 @@ export default function Sell() {
             </button>
           </div>
         ))}
-        {!isSubmitted && photos.length < maxPhotos && (
+        {!isSubmitted && isLoggedIn && photos.length < maxPhotos && (
           <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-red-400 hover:text-red-500 transition-colors">
             <Camera className="h-5 w-5" />
             <span className="text-[10px] font-medium">Add</span>
@@ -362,8 +364,8 @@ export default function Sell() {
       </div>
       <p className="text-xs text-gray-400">
         {photos.length === 0
-          ? `Upload up to ${maxPhotos} photos. The first will be the main listing image.`
-          : `${photos.length} of ${maxPhotos} photos added.`}
+          ? `Upload up to ${isUnlimited ? "unlimited" : maxPhotos} photos. The first will be the main listing image.`
+          : `${photos.length}${isUnlimited ? "" : ` of ${maxPhotos}`} photos added.`}
       </p>
       {isSubmitted && (
         <div className="flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
@@ -437,7 +439,9 @@ export default function Sell() {
             "Set your asking price and mileage.",
             "Write a title and description. Description is required if you add photos.",
             "How should buyers reach you?",
-            isLoggedIn ? "Add up to 10 photos. First photo is the main image." : "Add up to 4 photos. Register to unlock up to 10 on future listings.",
+            isLoggedIn
+              ? `Add up to ${isUnlimited ? "unlimited" : maxPhotos} photos. First photo is the main image.`
+              : "Sign in to add photos.",
           ][step]}
           </p>
 

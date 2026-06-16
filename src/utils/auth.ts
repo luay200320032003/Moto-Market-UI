@@ -10,6 +10,15 @@ export interface AuthUser {
   role?: string;
   trialEndsAt?: string;
   hasActiveSubscription?: boolean;
+  subscriptionPlan?: "user" | "dealer";
+}
+
+/** Max photos allowed for a given user. Returns null for unlimited (dealer). */
+export function maxPhotosForUser(user: AuthUser | null): number | null {
+  if (!user) return 0;
+  if (user.subscriptionPlan === "dealer" || user.role?.toLowerCase() === "dealer") return null;
+  if (user.subscriptionPlan === "user") return 10;
+  return 5; // default for logged-in users with no plan yet
 }
 
 export function isTrialActive(user: AuthUser | null): boolean {
@@ -158,5 +167,11 @@ export function getUserFromToken(token: string | null): AuthUser | null {
          payload.has_active_subscription === false || payload.has_active_subscription === "false"
            ? false : undefined);
 
-  return { email, full_name: fullName, role, trialEndsAt, hasActiveSubscription };
+  const rawPlan = payload.subscriptionPlan ?? payload.subscription_plan ?? payload.plan;
+  const planStr = typeof rawPlan === "string" ? rawPlan.toLowerCase() : undefined;
+  const subscriptionPlan = (planStr === "user" || planStr === "dealer")
+    ? planStr as "user" | "dealer"
+    : undefined;
+
+  return { email, full_name: fullName, role, trialEndsAt, hasActiveSubscription, subscriptionPlan };
 }
