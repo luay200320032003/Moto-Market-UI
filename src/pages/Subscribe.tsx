@@ -2,11 +2,35 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CheckCircle2, User, Building2, ChevronLeft, Loader2,
-  Shield, CreditCard, Lock, ArrowRight, Zap, Star
+  Shield, Lock, ArrowRight, Zap, Star, CreditCard,
 } from "lucide-react";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import { Button } from "../Components/ui/button";
 import { getStoredUser } from "../utils/auth";
 import API from "../api";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "");
+
+const ELEMENT_STYLE = {
+  style: {
+    base: {
+      color: "#f9fafb",
+      fontFamily: "inherit",
+      fontSize: "14px",
+      fontSmoothing: "antialiased",
+      "::placeholder": { color: "#4b5563" },
+    },
+    invalid: { color: "#f87171", iconColor: "#f87171" },
+  },
+};
 
 const PLANS = [
   {
@@ -88,21 +112,17 @@ function PlansView({
           Back to My Garage
         </Link>
 
-        {/* Hero */}
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-semibold text-gray-300 mb-5">
             <Zap className="h-3.5 w-3.5 text-yellow-400" />
             Simple, transparent pricing
           </div>
-          <h1 className="text-5xl font-black text-white tracking-tight mb-4">
-            Choose your plan
-          </h1>
+          <h1 className="text-5xl font-black text-white tracking-tight mb-4">Choose your plan</h1>
           <p className="text-gray-400 max-w-md mx-auto">
             Pick the plan that fits how you sell. Cancel any time — no contracts, no hidden fees.
           </p>
         </div>
 
-        {/* Cards */}
         <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto mb-10">
           {PLANS.map((plan) => {
             const Icon = plan.icon;
@@ -126,7 +146,6 @@ function PlansView({
                     {plan.badge}
                   </span>
                 )}
-
                 <div className="flex items-center justify-between mb-6">
                   <div className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-colors ${
                     isSelected ? (isDealer ? "bg-red-600" : "bg-blue-600") : "bg-white/10"
@@ -141,21 +160,16 @@ function PlansView({
                     {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
                   </div>
                 </div>
-
                 <h2 className="text-2xl font-black text-white mb-1">{plan.name}</h2>
                 <p className="text-xs text-gray-400 mb-6">{plan.description}</p>
-
                 <div className="mb-7 pb-7 border-b border-white/10">
                   <div className="flex items-end gap-0.5">
                     <span className="text-5xl font-black text-white">${plan.price.toFixed(0)}</span>
-                    <span className="text-lg text-gray-400 mb-1">
-                      .{plan.price.toFixed(2).split(".")[1]}
-                    </span>
+                    <span className="text-lg text-gray-400 mb-1">.{plan.price.toFixed(2).split(".")[1]}</span>
                     <span className="text-sm text-gray-400 mb-1.5 ml-1">/ month</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Billed monthly. Cancel anytime.</p>
                 </div>
-
                 <ul className="space-y-3">
                   {plan.features.map((f) => <FeatureItem key={f} text={f} />)}
                 </ul>
@@ -164,7 +178,6 @@ function PlansView({
           })}
         </div>
 
-        {/* CTA */}
         <div className="max-w-sm mx-auto text-center">
           <Button
             onClick={onContinue}
@@ -173,7 +186,6 @@ function PlansView({
             Continue with {selectedPlan.name} — ${selectedPlan.price.toFixed(2)}/mo
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
-
           <div className="flex items-center justify-center gap-5 mt-5 text-xs text-gray-500">
             <span className="flex items-center gap-1.5"><Lock className="h-3 w-3" />Secure payment</span>
             <span className="flex items-center gap-1.5"><Shield className="h-3 w-3" />Cancel anytime</span>
@@ -186,28 +198,73 @@ function PlansView({
   );
 }
 
-// ── Step 2: Checkout ────────────────────────────────────────────────────────
-function CheckoutView({
+// ── Step 2: Checkout (must be inside <Elements>) ────────────────────────────
+function CheckoutForm({
   plan,
   authUser,
-  nameOnCard,
-  setNameOnCard,
   onBack,
-  onConfirm,
-  loading,
-  error,
+  onSuccess,
 }: {
   plan: Plan;
   authUser: ReturnType<typeof getStoredUser>;
-  nameOnCard: string;
-  setNameOnCard: (v: string) => void;
   onBack: () => void;
-  onConfirm: () => void;
-  loading: boolean;
-  error: string;
+  onSuccess: () => void;
 }) {
+  const stripe = useStripe();
+  const elements = useElements();
   const Icon = plan.icon;
   const isDealer = plan.id === "dealer";
+
+  const [nameOnCard, setNameOnCard] = useState(
+    authUser?.full_name ??
+    `${authUser?.firstName ?? ""} ${authUser?.lastName ?? ""}`.trim()
+  );
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async () => {
+    if (!stripe || !elements) {
+      setError("Stripe is not loaded yet. Please wait a moment and try again.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const cardElement = elements.getElement(CardNumberElement);
+      if (!cardElement) throw new Error("Card element not mounted.");
+
+      const { paymentMethod, error: stripeError } = await stripe.createPaymentMethod({
+        type: "card",
+        card: cardElement,
+        billing_details: {
+          name: nameOnCard || undefined,
+          email: authUser?.email || undefined,
+        },
+      });
+
+      if (stripeError) {
+        setError(stripeError.message ?? "Card validation failed.");
+        return;
+      }
+
+      await API.post("/api/subscription", {
+        plan: plan.id,
+        email: authUser?.email,
+        nameOnCard,
+        paymentMethodId: paymentMethod.id,
+      });
+
+      onSuccess();
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Something went wrong. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900">
@@ -221,7 +278,7 @@ function CheckoutView({
           Back to plans
         </button>
 
-        {/* Progress indicator */}
+        {/* Progress */}
         <div className="flex items-center gap-2 mb-10 max-w-xs">
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
@@ -247,7 +304,7 @@ function CheckoutView({
 
         <div className="grid md:grid-cols-5 gap-8 items-start">
 
-          {/* ── Left: form (3 cols) ── */}
+          {/* ── Left: form ── */}
           <div className="md:col-span-3 space-y-6">
             <div>
               <h1 className="text-3xl font-black text-white mb-1">Complete your subscription</h1>
@@ -268,15 +325,12 @@ function CheckoutView({
               </div>
             </div>
 
-            {/* Payment */}
+            {/* Payment — real Stripe Elements */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
-              {/* Header row */}
               <div className="flex items-center justify-between">
-                <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
-                  Payment details
-                </h3>
+                <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Payment details</h3>
                 <div className="flex items-center gap-2">
-                  {/* Stripe wordmark — coloured SVG inline */}
+                  {/* Stripe wordmark */}
                   <svg viewBox="0 0 60 25" className="h-5 w-auto" aria-label="Stripe">
                     <path
                       d="M5.5 10.2c0-.7.6-1 1.5-1 1.4 0 3.1.4 4.5 1.1V6.4c-1.5-.6-3-.9-4.5-.9C3.6 5.5 1 7 1 10.4c0 5.3 7.3 4.5 7.3 6.8 0 .8-.7 1.1-1.7 1.1-1.5 0-3.4-.6-4.9-1.5v3.9c1.7.7 3.3 1 4.9 1 3.7 0 6.2-1.5 6.2-4.9-.1-5.7-7.3-4.7-7.3-6.6zm14 -4.6l-3.9.8V9h-2v3h2v5.8c0 2.5 1.2 3.7 3.8 3.7.9 0 2-.2 2.8-.5V18c-.5.2-1 .3-1.6.3-.9 0-1.1-.5-1.1-1.2V12h2.7V9h-2.7V5.6zm8.3 4.2c-.9 0-1.7.3-2.3.9l-.2-.7H22v13.4l3-.6V19c.6.4 1.4.6 2.3.6 2.4 0 4.6-1.9 4.6-5.1 0-3-2.1-4.7-4.1-4.7zm-.7 7.2c-.6 0-1.1-.2-1.4-.5v-4c.4-.4.9-.6 1.5-.6 1.1 0 1.9 1 1.9 2.5s-.8 2.6-2 2.6zm9.7-7.2c-3 0-4.8 2-4.8 5 0 3.3 2 5 5 5 1.4 0 2.7-.3 3.8-1v-2.7c-1 .6-2.1.9-3.2.9-1.3 0-2.4-.6-2.5-2h6.3v-1.2c0-3-1.6-5-4.6-5zm-1.6 4c.1-1.4.9-2 1.7-2 .7 0 1.5.5 1.5 2h-3.2zm12-4c-.8 0-1.7.4-2.1 1.2l-.2-1h-2.5v9.6h3v-6.7c.5-.6 1.3-.8 2.2-.8h.8V9.8c-.4-.1-.8-.2-1.2-.2zm5.5-3.4c-1 0-1.7.7-1.7 1.6 0 .9.7 1.6 1.7 1.6s1.7-.7 1.7-1.6c0-.9-.7-1.6-1.7-1.6zm-1.5 12.6h3V9.8h-3v9.6z"
@@ -290,33 +344,11 @@ function CheckoutView({
                 </div>
               </div>
 
-              {/* Coming-soon banner */}
-              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 flex items-center gap-2.5">
-                <CreditCard className="h-4 w-4 text-amber-400 shrink-0" />
-                <p className="text-xs text-amber-300">
-                  Live payments are coming soon. No charges will be made — your plan activates immediately.
-                </p>
-              </div>
-
               {/* Card number */}
               <div>
                 <label className="block text-xs text-gray-400 mb-1.5">Card number</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="1234  5678  9012  3456"
-                    maxLength={19}
-                    className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors pr-20"
-                  />
-                  {/* Card brand icons placeholder */}
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                    <div className="h-5 w-8 rounded bg-[#1434CB] flex items-center justify-center">
-                      <span className="text-[7px] font-black text-white leading-none">VISA</span>
-                    </div>
-                    <div className="h-5 w-8 rounded bg-white/10 flex items-center justify-center">
-                      <span className="text-[6px] font-black text-orange-400 leading-none">MC</span>
-                    </div>
-                  </div>
+                <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors">
+                  <CardNumberElement options={{ ...ELEMENT_STYLE, showIcon: true }} />
                 </div>
               </div>
 
@@ -324,25 +356,17 @@ function CheckoutView({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-400 mb-1.5">Expiry date</label>
-                  <input
-                    type="text"
-                    placeholder="MM / YY"
-                    maxLength={7}
-                    className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors"
-                  />
+                  <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors">
+                    <CardExpiryElement options={ELEMENT_STYLE} />
+                  </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">
-                    CVC
-                  </label>
+                  <label className="block text-xs text-gray-400 mb-1.5">CVC</label>
                   <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="123"
-                      maxLength={4}
-                      className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors pr-10"
-                    />
-                    <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
+                    <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors pr-10">
+                      <CardCvcElement options={ELEMENT_STYLE} />
+                    </div>
+                    <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
                   </div>
                 </div>
               </div>
@@ -372,8 +396,8 @@ function CheckoutView({
             )}
 
             <Button
-              onClick={onConfirm}
-              disabled={loading}
+              onClick={handleSubmit}
+              disabled={loading || !stripe}
               className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-base disabled:opacity-60 shadow-xl shadow-red-600/20"
             >
               {loading ? (
@@ -394,14 +418,13 @@ function CheckoutView({
             </p>
           </div>
 
-          {/* ── Right: order summary (2 cols) ── */}
+          {/* ── Right: order summary ── */}
           <div className="md:col-span-2">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-6 sticky top-24">
               <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-5">
                 Order summary
               </h3>
 
-              {/* Plan header */}
               <div className="flex items-center gap-3 mb-5 pb-5 border-b border-white/10">
                 <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isDealer ? "bg-red-600" : "bg-blue-600"}`}>
                   <Icon className="h-5 w-5 text-white" />
@@ -412,7 +435,6 @@ function CheckoutView({
                 </div>
               </div>
 
-              {/* Features (top 4) */}
               <ul className="space-y-2.5 mb-5 pb-5 border-b border-white/10">
                 {plan.features.slice(0, 4).map((f) => <FeatureItem key={f} text={f} />)}
                 {plan.features.length > 4 && (
@@ -422,7 +444,6 @@ function CheckoutView({
                 )}
               </ul>
 
-              {/* Price breakdown */}
               <div className="space-y-2 mb-5">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">{plan.name} plan</span>
@@ -438,7 +459,6 @@ function CheckoutView({
                 </div>
               </div>
 
-              {/* Guarantee */}
               <div className="rounded-xl bg-green-500/10 border border-green-500/20 px-4 py-3 flex items-start gap-2.5">
                 <Shield className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-green-300 leading-relaxed">
@@ -459,23 +479,16 @@ function SuccessView({ plan }: { plan: Plan }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-
-        {/* Animated checkmark */}
         <div className="relative inline-flex items-center justify-center mb-8">
           <div className="absolute h-28 w-28 rounded-full bg-green-500/20 animate-ping" style={{ animationDuration: "2s" }} />
           <div className="relative h-24 w-24 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
             <CheckCircle2 className="h-12 w-12 text-green-400" />
           </div>
         </div>
-
         <h1 className="text-4xl font-black text-white mb-2">You're subscribed!</h1>
         <p className="text-gray-400 mb-8">
-          Welcome to the{" "}
-          <strong className="text-white">{plan.name} plan</strong>.{" "}
-          Your account has been activated.
+          Welcome to the <strong className="text-white">{plan.name} plan</strong>. Your account has been activated.
         </p>
-
-        {/* What's unlocked */}
         <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-left mb-8">
           <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-4">
             What's now unlocked
@@ -484,8 +497,6 @@ function SuccessView({ plan }: { plan: Plan }) {
             {plan.features.slice(0, 3).map((f) => <FeatureItem key={f} text={f} />)}
           </ul>
         </div>
-
-        {/* CTAs */}
         <div className="space-y-3">
           <Link to="/my-listings" className="block">
             <Button className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-base">
@@ -499,7 +510,6 @@ function SuccessView({ plan }: { plan: Plan }) {
             </Button>
           </Link>
         </div>
-
       </div>
     </div>
   );
@@ -510,51 +520,21 @@ export default function Subscribe() {
   const authUser = getStoredUser();
   const [selected, setSelected] = useState<PlanId>("user");
   const [step, setStep] = useState<Step>("plans");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [nameOnCard, setNameOnCard] = useState(
-    authUser?.full_name ??
-    `${authUser?.firstName ?? ""} ${authUser?.lastName ?? ""}`.trim()
-  );
 
   const selectedPlan = PLANS.find((p) => p.id === selected)!;
-
-  const handleSubscribe = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      await API.post("/api/subscription", {
-        plan: selected,
-        email: authUser?.email,
-        nameOnCard,
-        // paymentMethodId: "<from Stripe.js once integrated>",
-      });
-      setStep("success");
-    } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-          err?.message ||
-          "Something went wrong. Please try again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (step === "success") return <SuccessView plan={selectedPlan} />;
 
   if (step === "checkout") {
     return (
-      <CheckoutView
-        plan={selectedPlan}
-        authUser={authUser}
-        nameOnCard={nameOnCard}
-        setNameOnCard={setNameOnCard}
-        onBack={() => { setError(""); setStep("plans"); }}
-        onConfirm={handleSubscribe}
-        loading={loading}
-        error={error}
-      />
+      <Elements stripe={stripePromise}>
+        <CheckoutForm
+          plan={selectedPlan}
+          authUser={authUser}
+          onBack={() => setStep("plans")}
+          onSuccess={() => setStep("success")}
+        />
+      </Elements>
     );
   }
 
