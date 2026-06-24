@@ -37,22 +37,22 @@ export default function MyListings() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const DEMO_BLOCKED = true; // ← flip to false to disable demo
+  const authUser      = getStoredUser();
+  const isSubscribed  = !!authUser?.hasActiveSubscription;
 
-  const authUser   = getStoredUser();
-  const inGrace    = isInGracePeriod(authUser);
-  const daysLeft   = graceDaysLeft(authUser);
-  const blocked    = DEMO_BLOCKED || isListingsBlocked(authUser);
-  const onTrial    = !DEMO_BLOCKED && isTrialActive(authUser);
-  const trialLeft  = trialDaysLeft(authUser);
+  const inGrace  = !isSubscribed && isInGracePeriod(authUser);
+  const daysLeft = graceDaysLeft(authUser);
+  const blocked  = !isSubscribed && isListingsBlocked(authUser);
+  const onTrial  = !isSubscribed && isTrialActive(authUser);
+  const trialLeft = trialDaysLeft(authUser);
 
   // Badge shown on every card
-  // Falls back to "Trial active" when backend hasn't sent trialEndsAt yet
   const cardBadge: { label: string; cls: string } | null =
+    isSubscribed ? null :
     blocked   ? null :
     inGrace   ? { label: `${daysLeft}d grace left`,  cls: "bg-amber-100 text-amber-700" } :
     onTrial   ? { label: `${trialLeft}d trial left`, cls: "bg-blue-100 text-blue-700"   } :
-    !authUser?.hasActiveSubscription
+    !authUser?.trialEndsAt
               ? { label: "Trial active",              cls: "bg-blue-100 text-blue-700"   } :
     null;
 

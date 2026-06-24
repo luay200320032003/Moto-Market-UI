@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CheckCircle2, User, Building2, ChevronLeft, Loader2,
-  Shield, Lock, ArrowRight, Zap, Star, CreditCard,
+  Shield, Lock, ArrowRight, Zap, Star, CreditCard, XCircle, AlertTriangle,
 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -14,7 +14,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { Button } from "../Components/ui/button";
-import { getStoredUser } from "../utils/auth";
+import { getStoredUser, storeUser } from "../utils/auth";
 import API from "../api";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "");
@@ -68,7 +68,6 @@ const PLANS = [
 ] as const;
 
 type PlanId = (typeof PLANS)[number]["id"];
-type Step = "plans" | "checkout" | "success";
 type Plan = (typeof PLANS)[number];
 
 function FeatureItem({ text }: { text: string }) {
@@ -164,7 +163,7 @@ function PlansView({
                 <p className="text-xs text-gray-400 mb-6">{plan.description}</p>
                 <div className="mb-7 pb-7 border-b border-white/10">
                   <div className="flex items-end gap-0.5">
-                    <span className="text-5xl font-black text-white">${plan.price.toFixed(0)}</span>
+                    <span className="text-5xl font-black text-white">${Math.floor(plan.price)}</span>
                     <span className="text-lg text-gray-400 mb-1">.{plan.price.toFixed(2).split(".")[1]}</span>
                     <span className="text-sm text-gray-400 mb-1.5 ml-1">/ month</span>
                   </div>
@@ -247,12 +246,35 @@ function CheckoutForm({
         return;
       }
 
-      await API.post("/api/subscription", {
+      const { data } = await API.post("/api/subscription", {
         plan: plan.id,
         email: authUser?.email,
         nameOnCard,
         paymentMethodId: paymentMethod.id,
       });
+
+      // Update stored profile immediately so the UI reflects the new plan
+      // without requiring a re-login. Backend should return the updated plan
+      // fields; fall back to what we already know if not provided.
+      const returnedPlan = data?.plan ?? data?.subscriptionPlan ?? plan.id;
+      const planValue = (returnedPlan === "user" || returnedPlan === "dealer")
+        ? returnedPlan as "user" | "dealer"
+        : plan.id;
+
+      if (authUser) {
+        storeUser({
+          ...authUser,
+          hasActiveSubscription: true,
+          subscriptionPlan: planValue,
+        });
+      }
+
+      // If the backend returned a new JWT, store it so future API calls
+      // carry updated claims.
+      if (data?.token) {
+        const { storeToken } = await import("../utils/auth");
+        storeToken(data.token);
+      }
 
       onSuccess();
     } catch (err: any) {
@@ -474,6 +496,181 @@ function CheckoutForm({
   );
 }
 
+// ── Manage / Cancel subscription ───────────────────────────────────────────
+function ManageView({ onCancelled }: { onCancelled: () => void }) {
+  const authUser = getStoredUser();
+  const planId = authUser?.subscriptionPlan ?? "user";
+  const plan = PLANS.find((p) => p.id === planId) ?? PLANS[0];
+  const Icon = plan.icon;
+  const isDealer = plan.id === "dealer";
+
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleCancel = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await API.delete("/api/subscription");
+      // clear subscription from local profile so UI updates immediately
+      if (authUser) {
+        storeUser({ ...authUser, hasActiveSubscription: false, subscriptionPlan: undefined });
+      }
+      onCancelled();
+    } catch (err: any) {
+      const data = (err as any)?.response?.data;
+      setError(data?.message || data?.description || err?.message || "Failed to cancel. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+        <Link
+          to="/my-listings"
+          className="inline-flex items-center gap-1.5 mb-10 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Back to My Garage
+        </Link>
+
+        <h1 className="text-3xl font-black text-white mb-1">Manage Subscription</h1>
+        <p className="text-sm text-gray-400 mb-8">Your current plan and billing details.</p>
+
+        {/* Current plan card */}
+        <div className={`rounded-2xl border-2 p-6 mb-6 ${isDealer ? "border-red-500/40 bg-red-950/20" : "border-blue-500/40 bg-blue-950/20"}`}>
+          <div className="flex items-center gap-4 mb-5">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${isDealer ? "bg-red-600" : "bg-blue-600"}`}>
+              <Icon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-lg font-black text-white">{plan.name} Plan</p>
+                <span className="rounded-full bg-green-500/20 border border-green-500/30 px-2 py-0.5 text-[10px] font-bold text-green-400">
+                  ACTIVE
+                </span>
+              </div>
+              <p className="text-sm text-gray-400">${plan.price.toFixed(2)} / month</p>
+            </div>
+          </div>
+
+          <ul className="space-y-2.5 pb-5 mb-5 border-b border-white/10">
+            {plan.features.slice(0, 4).map((f) => <FeatureItem key={f} text={f} />)}
+            {plan.features.length > 4 && (
+              <li className="text-xs text-gray-500 pl-6">+{plan.features.length - 4} more features</li>
+            )}
+          </ul>
+
+          <p className="text-xs text-gray-500 flex items-center gap-1.5">
+            <Shield className="h-3 w-3" />
+            Your listings stay active until the end of your current billing period after cancellation.
+          </p>
+        </div>
+
+        {/* Cancel section */}
+        {!confirming ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h3 className="text-sm font-semibold text-white mb-1">Cancel subscription</h3>
+            <p className="text-xs text-gray-400 mb-4">
+              You can cancel at any time. Access continues until the end of your billing cycle.
+            </p>
+            <button
+              onClick={() => setConfirming(true)}
+              className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors underline underline-offset-2"
+            >
+              Cancel my subscription
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+            <div className="flex items-start gap-3 mb-5">
+              <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-bold text-white mb-1">Are you sure you want to cancel?</h3>
+                <p className="text-xs text-gray-400">
+                  Your <strong className="text-white">{plan.name} plan</strong> will remain active until the end
+                  of your current billing period. After that, your listings will be paused.
+                </p>
+              </div>
+            </div>
+
+            {error && (
+              <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                {error}
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                onClick={handleCancel}
+                disabled={loading}
+                className="flex-1 h-10 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-sm disabled:opacity-60"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Cancelling…
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <XCircle className="h-3.5 w-3.5" />
+                    Yes, cancel subscription
+                  </span>
+                )}
+              </Button>
+              <Button
+                onClick={() => { setConfirming(false); setError(""); }}
+                disabled={loading}
+                variant="ghost"
+                className="flex-1 h-10 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 font-semibold text-sm"
+              >
+                Keep my plan
+              </Button>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+// ── Cancelled confirmation ──────────────────────────────────────────────────
+function CancelledView() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900 flex items-center justify-center px-4">
+      <div className="max-w-md w-full text-center">
+        <div className="flex justify-center mb-6">
+          <div className="h-20 w-20 rounded-full bg-gray-700/40 border border-gray-600/30 flex items-center justify-center">
+            <XCircle className="h-10 w-10 text-gray-400" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-black text-white mb-2">Subscription Cancelled</h1>
+        <p className="text-gray-400 mb-8">
+          Your subscription has been cancelled. You'll retain access until the end of your current billing period.
+        </p>
+        <div className="space-y-3">
+          <Link to="/my-listings" className="block">
+            <Button className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold">
+              Go to My Garage
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+          <Link to="/subscribe" className="block">
+            <Button variant="ghost" className="w-full h-11 rounded-xl text-gray-400 hover:text-white hover:bg-white/10">
+              View plans again
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Step 3: Success ─────────────────────────────────────────────────────────
 function SuccessView({ plan }: { plan: Plan }) {
   return (
@@ -516,14 +713,20 @@ function SuccessView({ plan }: { plan: Plan }) {
 }
 
 // ── Root component ──────────────────────────────────────────────────────────
+type Step = "manage" | "plans" | "checkout" | "success" | "cancelled";
+
 export default function Subscribe() {
   const authUser = getStoredUser();
+  const alreadySubscribed = !!authUser?.hasActiveSubscription;
+
   const [selected, setSelected] = useState<PlanId>("user");
-  const [step, setStep] = useState<Step>("plans");
+  const [step, setStep] = useState<Step>(alreadySubscribed ? "manage" : "plans");
 
   const selectedPlan = PLANS.find((p) => p.id === selected)!;
 
+  if (step === "cancelled") return <CancelledView />;
   if (step === "success") return <SuccessView plan={selectedPlan} />;
+  if (step === "manage") return <ManageView onCancelled={() => setStep("cancelled")} />;
 
   if (step === "checkout") {
     return (
