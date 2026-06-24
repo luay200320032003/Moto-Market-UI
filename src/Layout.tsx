@@ -4,7 +4,7 @@ import { createPageUrl } from "./utils";
 import { Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2, Bike, CheckCircle2 } from "lucide-react";
 import { Button } from "./Components/ui/button";
 import { Outlet } from "react-router-dom";
-import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser, isTrialActive, trialDaysLeft } from "./utils/auth";
+import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser, isTrialActive, trialDaysLeft, accessDaysLeft } from "./utils/auth";
 //import { User as UserEntity } from "./Entities/User";
 import {
   DropdownMenu,
@@ -46,9 +46,10 @@ export default function Layout() {
   }, [location.pathname, location.search]);
 
   const storedUser = getStoredUser();
-  const onTrial = isTrialActive(storedUser);
-  const daysLeft = trialDaysLeft(storedUser);
   const isSubscribed = !!storedUser?.hasActiveSubscription;
+  const onTrial = !isSubscribed && isTrialActive(storedUser);
+  const trialDays = trialDaysLeft(storedUser);
+  const accessDays = accessDaysLeft(storedUser);
 
   const handleLogin = (accountType: LoginAccountType) => {
     const searchParams = new URLSearchParams({
@@ -82,7 +83,7 @@ const isActive = (pageName: string): boolean => {
           <div className="flex justify-between items-center h-10">
             <div className="flex items-center space-x-6">
               <span>🏍️ Find Your Perfect Ride</span>
-              <span className="hidden md:inline">📞 1-800-MOTO-TRADE</span>
+              <span className="hidden md:inline">📞 615-625-6055</span>
             </div>
             <div className="flex items-center space-x-4">
               {!isLoading && (
@@ -105,9 +106,14 @@ const isActive = (pageName: string): boolean => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {onTrial && (
+                        {!isSubscribed && accessDays > 0 && (
                           <div className="px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 rounded-t-md border-b border-amber-100">
-                            Trial: {daysLeft > 0 ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left` : "expires today"}
+                            Access expires in {accessDays} day{accessDays !== 1 ? "s" : ""}
+                          </div>
+                        )}
+                        {!isSubscribed && accessDays === 0 && onTrial && (
+                          <div className="px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 rounded-t-md border-b border-amber-100">
+                            Trial: {trialDays > 0 ? `${trialDays} day${trialDays !== 1 ? "s" : ""} left` : "expires today"}
                           </div>
                         )}
                         <DropdownMenuItem>

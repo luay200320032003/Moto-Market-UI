@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   CheckCircle2, User, Building2, ChevronLeft, Loader2,
   Shield, Lock, ArrowRight, Zap, Star, CreditCard, XCircle, AlertTriangle,
@@ -14,7 +14,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import { Button } from "../Components/ui/button";
-import { getStoredUser, storeUser } from "../utils/auth";
+import { getStoredUser, getStoredToken, storeUser } from "../utils/auth";
 import API from "../api";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "");
@@ -512,10 +512,15 @@ function ManageView({ onCancelled }: { onCancelled: () => void }) {
     setError("");
     setLoading(true);
     try {
-      await API.delete("/api/subscription");
-      // clear subscription from local profile so UI updates immediately
+      const { data } = await API.delete("/api/subscription");
+      // clear subscription and store accessUntil so the header can show days left
       if (authUser) {
-        storeUser({ ...authUser, hasActiveSubscription: false, subscriptionPlan: undefined });
+        storeUser({
+          ...authUser,
+          hasActiveSubscription: false,
+          subscriptionPlan: undefined,
+          accessUntil: data?.accessUntil ?? data?.access_until ?? undefined,
+        });
       }
       onCancelled();
     } catch (err: any) {
@@ -716,11 +721,19 @@ function SuccessView({ plan }: { plan: Plan }) {
 type Step = "manage" | "plans" | "checkout" | "success" | "cancelled";
 
 export default function Subscribe() {
+  const navigate = useNavigate();
   const authUser = getStoredUser();
+  const isLoggedIn = Boolean(getStoredToken());
   const alreadySubscribed = !!authUser?.hasActiveSubscription;
 
   const [selected, setSelected] = useState<PlanId>("user");
   const [step, setStep] = useState<Step>(alreadySubscribed ? "manage" : "plans");
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate("/login?returnTo=/subscribe", { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
 
   const selectedPlan = PLANS.find((p) => p.id === selected)!;
 

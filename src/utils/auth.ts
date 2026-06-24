@@ -2,6 +2,7 @@ const TOKEN_STORAGE_KEY = "token";
 const USER_STORAGE_KEY = "user_profile";
 
 export interface AuthUser {
+  id?: number;
   email?: string;
   full_name?: string;
   firstName?: string;
@@ -11,6 +12,14 @@ export interface AuthUser {
   trialEndsAt?: string;
   hasActiveSubscription?: boolean;
   subscriptionPlan?: "user" | "dealer";
+  accessUntil?: string; // set after cancellation — end of paid billing period
+}
+
+/** Days of remaining paid access after cancellation (0 when none). */
+export function accessDaysLeft(user: AuthUser | null): number {
+  if (!user?.accessUntil || user.hasActiveSubscription) return 0;
+  const diff = new Date(user.accessUntil).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / 86_400_000));
 }
 
 /** Max photos allowed for a given user. Returns null for unlimited (dealer). */
@@ -173,5 +182,12 @@ export function getUserFromToken(token: string | null): AuthUser | null {
     ? planStr as "user" | "dealer"
     : undefined;
 
-  return { email, full_name: fullName, role, trialEndsAt, hasActiveSubscription, subscriptionPlan };
+  // sub claim is the canonical user ID in JWTs
+  const rawSub = payload.sub ?? payload.nameid ??
+    payload["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+  const id = typeof rawSub === "string" && /^\d+$/.test(rawSub)
+    ? parseInt(rawSub, 10)
+    : typeof rawSub === "number" ? rawSub : undefined;
+
+  return { id, email, full_name: fullName, role, trialEndsAt, hasActiveSubscription, subscriptionPlan };
 }

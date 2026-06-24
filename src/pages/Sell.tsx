@@ -102,12 +102,13 @@ export default function Sell() {
     }
   }, [isLoggedIn, navigate]);
 
+  // Must have an active subscription to create listings
+  const needsSubscription = isLoggedIn && !authUser?.hasActiveSubscription;
+
   // null = unlimited (dealer plan); 0 = not logged in
   const photoLimit = isLoggedIn ? maxPhotosForUser(authUser) : 0;
-  const maxPhotos  = photoLimit ?? 999; // unlimited stored as 999 internally
+  const maxPhotos  = photoLimit ?? 999;
   const isUnlimited = isLoggedIn && photoLimit === null;
-  // Trial expiry check (subscription gate — separate from photo cap)
-  const trialExpired = isLoggedIn && authUser !== null && !canCreateListing(authUser);
 
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<SellFormState>(initialForm);
@@ -147,6 +148,18 @@ export default function Sell() {
   const publishListing = async () => {
     setPublishError("");
     try {
+      // Step 1: upload images first (if any), get back imageUrls
+      let imageUrls: string[] = [];
+      if (photos.length > 0) {
+        const formData = new FormData();
+        photos.forEach((file) => formData.append("files", file));
+        const { data: uploadData } = await API.post("/api/listings/images", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        imageUrls = uploadData?.imageUrls ?? uploadData?.urls ?? uploadData ?? [];
+      }
+
+      // Step 2: create the listing with the returned imageUrls
       await API.post("/api/listings", {
         make:         form.make,
         model:        form.model,
@@ -165,6 +178,7 @@ export default function Sell() {
         sellerName:   form.sellerName,
         contactEmail: form.contactEmail,
         contactPhone: form.contactPhone || null,
+        imageUrls,
       });
       setIsSubmitted(true);
       setShowModal(false);
@@ -381,25 +395,36 @@ export default function Sell() {
 
   const stepContent = [renderDetails, renderPrice, renderDescription, renderContact, renderPhotos];
 
-  // Trial-expired wall — shown instead of the whole form
-  if (trialExpired) {
+  // Subscription required wall
+  if (needsSubscription) {
     return (
       <div className="min-h-[calc(100vh-6rem)] bg-gradient-to-br from-slate-950 via-gray-900 to-zinc-900 flex items-center justify-center py-10 px-4">
         <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <AlertTriangle className="h-8 w-8 text-red-600" />
           </div>
-          <h2 className="mb-2 text-2xl font-bold text-gray-900">Free Trial Ended</h2>
-          <p className="mb-6 text-sm text-gray-500">
-            Your 1-month free trial has expired. Subscribe to keep creating listings and unlock unlimited photos.
+          <h2 className="mb-2 text-2xl font-bold text-gray-900">Subscription Required</h2>
+          <p className="mb-2 text-sm text-gray-500">
+            You need an active subscription to list a motorcycle on MotoTrade.
           </p>
-          <Link to="/subscribe" className="block">
-            <Button className="w-full rounded-xl bg-red-600 text-white hover:bg-red-700">
+          <p className="mb-6 text-sm text-gray-400">
+            Choose a plan that fits you — starting at <span className="font-semibold text-gray-700">$9.99/mo</span>.
+          </p>
+          <Link to="/subscribe" className="block mb-3">
+            <Button className="w-full rounded-xl bg-red-600 text-white hover:bg-red-700 h-11 font-semibold">
               View Subscription Plans
             </Button>
           </Link>
+          <Link to="/Browse" className="block">
+            <Button variant="ghost" className="w-full rounded-xl text-gray-500 hover:text-gray-700 h-10 text-sm">
+              Browse motorcycles instead
+            </Button>
+          </Link>
           <p className="mt-4 text-xs text-gray-400">
-            Need help? Contact <a href="mailto:support@mototrade.com" className="text-red-600 hover:underline">support@mototrade.com</a>
+            Need help?{" "}
+            <a href="mailto:support@mototrade.com" className="text-red-600 hover:underline">
+              support@mototrade.com
+            </a>
           </p>
         </div>
       </div>

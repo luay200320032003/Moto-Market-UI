@@ -67,7 +67,9 @@ export default function MyListings() {
       setIsLoading(true);
       setError(null);
       try {
-        const { data } = await API.get("/api/listings");
+        const userId = authUser?.id;
+        if (!userId) throw new Error("User ID not found. Please log in again.");
+        const { data } = await API.get(`/api/listings/user/${userId}`);
         const raw: any[] = Array.isArray(data?.items) ? data.items
           : Array.isArray(data?.data) ? data.data
           : Array.isArray(data) ? data : [];
