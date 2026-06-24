@@ -56,7 +56,13 @@ export async function login(payload: LoginPayload): Promise<string> {
     const u: Record<string, any> = maybeUser ?? {};
     const jwt: Record<string, unknown> = parseJwtPayload(token) ?? {};
 
+    const rawSub = jwt.sub ?? jwt.nameid ?? u.id ?? u.userId ?? u.user_id;
+    const id = typeof rawSub === "string" && /^\d+$/.test(rawSub)
+      ? parseInt(rawSub, 10)
+      : typeof rawSub === "number" ? rawSub : undefined;
+
     const profile: AuthUser = {
+      id,
       email:    u.email ?? u.emailAddress ?? (jwt.email as string) ?? (jwt.unique_name as string) ?? undefined,
       full_name: u.full_name ?? u.name ?? (jwt.name as string) ?? undefined,
       firstName: u.firstName ?? u.first_name ?? u.given_name ?? undefined,
@@ -73,6 +79,12 @@ export async function login(payload: LoginPayload): Promise<string> {
           : jwt.hasActiveSubscription === false || jwt.hasActiveSubscription === "false"
             ? false
             : undefined),
+      subscriptionPlan: (() => {
+        const raw = u.subscriptionPlan ?? u.subscription_plan ?? u.plan ??
+          jwt.subscriptionPlan ?? jwt.subscription_plan ?? jwt.plan;
+        const v = typeof raw === "string" ? raw.toLowerCase() : undefined;
+        return (v === "user" || v === "dealer") ? v : undefined;
+      })(),
     };
     storeUser(profile);
   } catch {

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2, Bike } from "lucide-react";
+import { Heart, PlusCircle, Home, Grid3X3, Phone, User, LogOut, Menu, X, UserPlus, UserRound, Building2, Bike, CheckCircle2 } from "lucide-react";
 import { Button } from "./Components/ui/button";
 import { Outlet } from "react-router-dom";
-import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser, isTrialActive, trialDaysLeft } from "./utils/auth";
+import { clearStoredToken, clearStoredUser, getStoredToken, getUserFromToken, getStoredUser, isTrialActive, trialDaysLeft, accessDaysLeft } from "./utils/auth";
 //import { User as UserEntity } from "./Entities/User";
 import {
   DropdownMenu,
@@ -46,8 +46,10 @@ export default function Layout() {
   }, [location.pathname, location.search]);
 
   const storedUser = getStoredUser();
-  const onTrial = isTrialActive(storedUser);
-  const daysLeft = trialDaysLeft(storedUser);
+  const isSubscribed = !!storedUser?.hasActiveSubscription;
+  const onTrial = !isSubscribed && isTrialActive(storedUser);
+  const trialDays = trialDaysLeft(storedUser);
+  const accessDays = accessDaysLeft(storedUser);
 
   const handleLogin = (accountType: LoginAccountType) => {
     const searchParams = new URLSearchParams({
@@ -81,7 +83,7 @@ const isActive = (pageName: string): boolean => {
           <div className="flex justify-between items-center h-10">
             <div className="flex items-center space-x-6">
               <span>🏍️ Find Your Perfect Ride</span>
-              <span className="hidden md:inline">📞 1-800-MOTO-TRADE</span>
+              <span className="hidden md:inline">📞 615-625-6055</span>
             </div>
             <div className="flex items-center space-x-4">
               {!isLoading && (
@@ -104,9 +106,14 @@ const isActive = (pageName: string): boolean => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        {onTrial && (
+                        {!isSubscribed && accessDays > 0 && (
                           <div className="px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 rounded-t-md border-b border-amber-100">
-                            Trial: {daysLeft > 0 ? `${daysLeft} day${daysLeft !== 1 ? "s" : ""} left` : "expires today"}
+                            Access expires in {accessDays} day{accessDays !== 1 ? "s" : ""}
+                          </div>
+                        )}
+                        {!isSubscribed && accessDays === 0 && onTrial && (
+                          <div className="px-3 py-2 text-xs font-medium text-amber-700 bg-amber-50 rounded-t-md border-b border-amber-100">
+                            Trial: {trialDays > 0 ? `${trialDays} day${trialDays !== 1 ? "s" : ""} left` : "expires today"}
                           </div>
                         )}
                         <DropdownMenuItem>
@@ -218,6 +225,27 @@ const isActive = (pageName: string): boolean => {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {isSubscribed ? (
+                <Link
+                  to="/subscribe"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-50 text-green-700 font-medium text-sm hover:bg-green-100 transition-colors"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  Subscribed
+                </Link>
+              ) : (
+                <Link
+                  to="/subscribe"
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors font-medium ${
+                    isActive("subscribe")
+                      ? "bg-red-50 text-red-600"
+                      : "text-gray-700 hover:text-red-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Subscription
+                </Link>
+              )}
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="text-gray-700 hover:text-red-600 hover:bg-gray-50">
@@ -319,6 +347,27 @@ const isActive = (pageName: string): boolean => {
                 <UserPlus className="w-5 h-5 mr-3" />
                 Register
               </Link>
+
+              {isSubscribed ? (
+                <Link
+                  to="/subscribe"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 text-green-700 font-medium text-sm hover:bg-green-100 transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  Subscribed — Manage
+                </Link>
+              ) : (
+                <Link
+                  to="/subscribe"
+                  className={`flex items-center px-3 py-2 rounded-lg ${
+                    isActive("subscribe") ? "bg-red-50 text-red-600" : "text-gray-700"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Subscription
+                </Link>
+              )}
 
               <div className="border-t border-gray-200 my-2"></div>
 

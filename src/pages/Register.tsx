@@ -140,6 +140,7 @@ export default function Register() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dealerRegistered, setDealerRegistered] = useState(false);
+  const [individualRegistered, setIndividualRegistered] = useState(false);
 
   // Shared fields
   const [firstName, setFirstName] = useState("");
@@ -203,9 +204,9 @@ export default function Register() {
           email: email.trim(),
           password,
         });
+        setIndividualRegistered(true);
+        return;
       }
-
-      navigate("/login", { state: { registered: true, accountType } });
     } catch (err: unknown) {
       const fallback = "Registration failed. Please try again.";
       if (
@@ -225,27 +226,61 @@ export default function Register() {
     }
   };
 
-  if (dealerRegistered) {
+  if (dealerRegistered || individualRegistered) {
+    const isDealer = dealerRegistered;
+    const displayName = isDealer ? dealershipName : `${firstName} ${lastName}`.trim();
     return (
       <div className="min-h-[calc(100vh-6rem)] bg-[radial-gradient(circle_at_top,_rgba(220,38,38,0.15),_transparent_35%),linear-gradient(135deg,_#3b548a_0%,_#1f2937_40%,_#1e2f46_40%,_#9bbbdb_100%)] flex items-center justify-center px-4">
         <div className="max-w-md w-full rounded-3xl border border-white/60 bg-white/90 p-8 shadow-2xl text-center backdrop-blur">
-          <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle2 className="h-8 w-8 text-green-600" />
+
+          {/* Animated check */}
+          <div className="flex justify-center mb-6">
+            <div className="relative flex h-20 w-20 items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-green-100 animate-ping opacity-40" style={{ animationDuration: "2s" }} />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+                <CheckCircle2 className="h-10 w-10 text-green-600" />
+              </div>
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Dealer Account Created!</h2>
-          <p className="text-gray-600 mb-2">
-            Welcome, <span className="font-semibold">{dealershipName}</span>.
+
+          <h2 className="text-2xl font-bold text-gray-900 mb-1">
+            Registration Successful!
+          </h2>
+          <p className="text-gray-600 mb-1">
+            Welcome, <span className="font-semibold">{displayName}</span>!
           </p>
-          <p className="text-gray-500 text-sm mb-8">
-            Your dealer account has been registered successfully. You can now sign in and start managing your listings.
+          <p className="text-gray-500 text-sm mb-2">
+            {isDealer
+              ? "Your dealer account is ready. Sign in to start managing your inventory and listings."
+              : "Your account is ready. Sign in to browse, save favorites, and list your own bikes."}
           </p>
+
+          {/* What's next */}
+          <div className="my-6 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-left space-y-2.5">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">What's next</p>
+            {(isDealer ? [
+              "Sign in to your dealer account",
+              "Add your first motorcycle listing",
+              "Manage inquiries from buyers",
+            ] : [
+              "Sign in to your new account",
+              "Browse thousands of motorcycles",
+              "List your own bike for sale",
+            ]).map((step, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+                  {i + 1}
+                </div>
+                <p className="text-sm text-gray-600">{step}</p>
+              </div>
+            ))}
+          </div>
+
           <Link
-            to="/login?accountType=dealer"
+            to={`/login?accountType=${isDealer ? "dealer" : "individual"}`}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
           >
-            Sign in to your dealer account
+            Sign in to your account
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link to="/" className="mt-4 inline-block text-sm font-medium text-red-600 hover:text-red-700">

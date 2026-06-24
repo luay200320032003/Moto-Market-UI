@@ -9,13 +9,13 @@ import API from "../api";
 const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
 
 export default function Motocycle() {
-  const DEMO_BLOCKED = true; // ← flip to false to disable demo
+  const authUser     = getStoredUser();
+  const isSubscribed = !!authUser?.hasActiveSubscription;
 
-  const authUser  = getStoredUser();
-  const inGrace   = isInGracePeriod(authUser);
+  const inGrace   = !isSubscribed && isInGracePeriod(authUser);
   const daysLeft  = graceDaysLeft(authUser);
-  const blocked   = DEMO_BLOCKED || isListingsBlocked(authUser);
-  const onTrial   = !DEMO_BLOCKED && isTrialActive(authUser);
+  const blocked   = !isSubscribed && isListingsBlocked(authUser);
+  const onTrial   = !isSubscribed && isTrialActive(authUser);
   const trialLeft = trialDaysLeft(authUser);
 
   const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
