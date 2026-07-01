@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useSearchParams, useLocation, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
 import { Motorcycle } from "../entities/Motorcycle";
@@ -96,7 +96,7 @@ export default function Motocycle() {
 
   if (!motorcycle)
     return <div className="text-center py-10 text-gray-600">Motorcycle not found.</div>;
-  const photos = (motorcycle.image_urls ?? []).filter(
+  const photos = (motorcycle.imageUrls ?? motorcycle.image_urls ?? []).filter(
     (url) => typeof url === "string" && url.trim() !== "" && url.startsWith("http") && !url.includes("youtube.com")
   );
   if (photos.length === 0) photos.push(FALLBACK);
@@ -134,7 +134,7 @@ export default function Motocycle() {
         Back to listings
       </button>
 
-      {/* Trial / grace period banner — only on user's own listings */}
+      {/* Trial / grace period banner â€” only on user's own listings */}
       {isListing && (blocked || inGrace || onTrial) && (
         <div className={`mb-6 flex items-center justify-between gap-4 rounded-2xl px-5 py-3.5 text-sm font-medium ${
           blocked ? "bg-red-50 border border-red-200 text-red-700"
@@ -143,7 +143,7 @@ export default function Motocycle() {
         }`}>
           <span>
             {blocked
-              ? "Your listing is currently paused — subscribe to reactivate it."
+              ? "Your listing is currently paused â€” subscribe to reactivate it."
               : inGrace
               ? `Grace period: ${daysLeft} day${daysLeft !== 1 ? "s" : ""} left before this listing is paused.`
               : `Free trial: ${trialLeft} day${trialLeft !== 1 ? "s" : ""} remaining on your account.`}
@@ -234,7 +234,7 @@ export default function Motocycle() {
 
               {motorcycle.vin ? (
                 getStoredToken() ? (
-                  /* Logged in — show full VIN + Check VIN button */
+                  /* Logged in â€” show full VIN + Check VIN button */
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-mono font-medium text-gray-800">{motorcycle.vin}</span>
                     <button
@@ -243,11 +243,11 @@ export default function Motocycle() {
                       className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
                     >
                       {vinLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                      {vinLoading ? "Checking…" : "Check VIN"}
+                      {vinLoading ? "Checkingâ€¦" : "Check VIN"}
                     </button>
                   </div>
                 ) : (
-                  /* Not logged in — masked VIN with login prompt */
+                  /* Not logged in â€” masked VIN with login prompt */
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
@@ -386,11 +386,11 @@ export default function Motocycle() {
                 </div>
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
                   <p className="text-xs text-gray-500">Days Listed</p>
-                  <p className="text-lg font-bold text-gray-900">{daysListed ?? "—"}</p>
+                  <p className="text-lg font-bold text-gray-900">{daysListed ?? "â€”"}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
                   <p className="text-xs text-gray-500">Mileage</p>
-                  <p className="text-lg font-bold text-gray-900">{motorcycle.mileage ? `${motorcycle.mileage.toLocaleString()} mi` : "—"}</p>
+                  <p className="text-lg font-bold text-gray-900">{motorcycle.mileage ? `${motorcycle.mileage.toLocaleString()} mi` : "â€”"}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
                   <p className="text-xs text-gray-500">Condition</p>
@@ -423,7 +423,7 @@ export default function Motocycle() {
                   disabled={aiLoading}
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 px-5 py-2.5 text-sm font-semibold text-white hover:from-violet-700 hover:to-purple-800 disabled:opacity-60 transition-all"
                 >
-                  {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysing…</> : <><Sparkles className="h-4 w-4" /> {aiSuggestion ? "Re-analyse" : "Get AI Offer Suggestion"}</>}
+                  {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysingâ€¦</> : <><Sparkles className="h-4 w-4" /> {aiSuggestion ? "Re-analyse" : "Get AI Offer Suggestion"}</>}
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
@@ -535,7 +535,7 @@ export default function Motocycle() {
                 disabled={contactSending}
                 className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 w-full transition disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {contactSending ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : "Send Message"}
+                {contactSending ? <><Loader2 className="h-4 w-4 animate-spin" /> Sendingâ€¦</> : "Send Message"}
               </button>
             </form>
           )}
@@ -590,3 +590,4 @@ function Detail({ label, value }: { label: string; value: string | number | unde
     </div>
   );
 }
+
