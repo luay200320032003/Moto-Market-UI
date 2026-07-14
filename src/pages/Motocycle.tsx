@@ -96,8 +96,8 @@ export default function Motocycle() {
 
   if (!motorcycle)
     return <div className="text-center py-10 text-gray-600">Motorcycle not found.</div>;
-  const photos = (motorcycle.imageUrls ?? motorcycle.image_urls ?? []).filter(
-    (url) => typeof url === "string" && url.trim() !== "" && url.startsWith("http") && !url.includes("youtube.com")
+  const photos = (motorcycle.image_urls ?? []).filter(
+    (url: string) => typeof url === "string" && url.trim() !== "" && url.startsWith("http") && !url.includes("youtube.com")
   );
   if (photos.length === 0) photos.push(FALLBACK);
 
@@ -207,7 +207,7 @@ export default function Motocycle() {
           {/* Thumbnail strip */}
           {photos.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {photos.map((src, i) => (
+              {photos.map((src: string, i: number) => (
                 <button
                   key={i}
                   onClick={() => goTo(i)}
@@ -346,7 +346,7 @@ export default function Motocycle() {
           setAiError("");
           setAiSuggestion("");
           try {
-            const { data } = await API.post("/api/ai/price-suggestion", {
+            const { data } = await API.post<{ suggestion?: string; message?: string }>("/api/ai/price-suggestion", {
               motorcycleId: Number(motorcycleId),
               heading: motorcycle.title,
               price: motorcycle.price,
