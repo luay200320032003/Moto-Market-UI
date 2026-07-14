@@ -148,18 +148,18 @@ export default function Sell() {
   const publishListing = async () => {
     setPublishError("");
     try {
-      // Step 1: upload images first (if any), get back imageUrls
-      let imageUrls: string[] = [];
+      // Step 1: upload images → get back mediaId
+      let mediaId: number | null = null;
       if (photos.length > 0) {
         const formData = new FormData();
         photos.forEach((file) => formData.append("files", file));
         const { data: uploadData } = await API.post("/api/listings/images", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        imageUrls = uploadData?.imageUrls ?? uploadData?.urls ?? uploadData ?? [];
+        mediaId = uploadData?.mediaId ?? uploadData?.MediaId ?? uploadData?.id ?? null;
       }
 
-      // Step 2: create the listing with the returned imageUrls
+      // Step 2: create the listing with the mediaId
       await API.post("/api/listings", {
         make:         form.make,
         model:        form.model,
@@ -178,7 +178,7 @@ export default function Sell() {
         sellerName:   form.sellerName,
         contactEmail: form.contactEmail,
         contactPhone: form.contactPhone || null,
-        imageUrls,
+        mediaId,
       });
       setIsSubmitted(true);
       setShowModal(false);
