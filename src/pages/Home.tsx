@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Motorcycle, listMotorcycles } from "../entities/Motorcycle";
+import { Motorcycle, listMotorcycles } from "../Entities/Motorcycle";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Search, ChevronRight, Star, MapPin, Calendar, Gauge } from "lucide-react";

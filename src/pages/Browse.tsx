@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Motorcycle } from "../entities/Motorcycle";
+import { Motorcycle } from "../Entities/Motorcycle";
 import { Link, useLocation } from "react-router-dom";
 import { Search, Grid, List, SlidersHorizontal, Bike } from "lucide-react";
 import { getStoredToken } from "../utils/auth";

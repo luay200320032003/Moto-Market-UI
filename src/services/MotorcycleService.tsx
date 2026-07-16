@@ -1,5 +1,5 @@
 import API from "../api";
-import { Motorcycle } from "../entities/Motorcycle";
+import { Motorcycle } from "../Entities/Motorcycle";
 
 interface GetMotorcyclesParams {
   limit?: number;
