@@ -8,6 +8,7 @@ import Register from "./pages/Register";
 import Sell from "./pages/Sell";
 import MyListings from "./pages/MyListings";
 import Subscribe from "./pages/Subscribe";
+import ComingSoon from "./pages/ComingSoon";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/Sell" element={<Sell />} />
           <Route path="/my-listings" element={<MyListings />} />
           <Route path="/subscribe" element={<Subscribe />} />
+          <Route path="/coming-soon" element={<ComingSoon />} />
         </Route>
       </Routes>
     </Router>
