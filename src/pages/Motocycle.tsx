@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { useSearchParams, useLocation, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
-import { Motorcycle } from "../entities/Motorcycle";
+import { Motorcycle } from "../Entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
 import { getStoredToken, getStoredUser, isInGracePeriod, graceDaysLeft, isListingsBlocked, isTrialActive, trialDaysLeft } from "../utils/auth";
 import API from "../api";
