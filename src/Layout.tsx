@@ -212,15 +212,15 @@ const isActive = (pageName: string): boolean => {
                       List Your Bike
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span className="flex items-center w-full">
+                  <DropdownMenuItem asChild>
+                    <Link to="/coming-soon?feature=Get%20Trade-In%20Value" className="flex items-center w-full">
                       📊 Get Trade-In Value
-                    </span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span className="flex items-center w-full">
+                  <DropdownMenuItem asChild>
+                    <Link to="/coming-soon?feature=Selling%20Tips" className="flex items-center w-full">
                       📋 Selling Tips
-                    </span>
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -253,25 +253,25 @@ const isActive = (pageName: string): boolean => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>
-                    <span className="flex items-center w-full">
+                  <DropdownMenuItem asChild>
+                    <Link to="/coming-soon?feature=Financing" className="flex items-center w-full">
                       💰 Financing
-                    </span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span className="flex items-center w-full">
+                  <DropdownMenuItem asChild>
+                    <Link to="/coming-soon?feature=Insurance" className="flex items-center w-full">
                       🛡️ Insurance
-                    </span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span className="flex items-center w-full">
+                  <DropdownMenuItem asChild>
+                    <Link to="/coming-soon?feature=Inspections" className="flex items-center w-full">
                       🔧 Inspections
-                    </span>
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <span className="flex items-center w-full">
+                  <DropdownMenuItem asChild>
+                    <Link to="/coming-soon?feature=Shipping" className="flex items-center w-full">
                       🚚 Shipping
-                    </span>
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -374,10 +374,12 @@ const isActive = (pageName: string): boolean => {
               <div className="px-3 py-2 text-gray-600">
                 <div className="text-sm font-medium mb-2">Services</div>
                 <div className="space-y-1 text-sm">
-                  <div className="py-1">💰 Financing</div>
-                  <div className="py-1">🛡️ Insurance</div>
-                  <div className="py-1">🔧 Inspections</div>
-                  <div className="py-1">🚚 Shipping</div>
+                  <Link to="/coming-soon?feature=Get%20Trade-In%20Value" className="block py-1" onClick={() => setMobileMenuOpen(false)}>📊 Get Trade-In Value</Link>
+                  <Link to="/coming-soon?feature=Selling%20Tips" className="block py-1" onClick={() => setMobileMenuOpen(false)}>📋 Selling Tips</Link>
+                  <Link to="/coming-soon?feature=Financing" className="block py-1" onClick={() => setMobileMenuOpen(false)}>💰 Financing</Link>
+                  <Link to="/coming-soon?feature=Insurance" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🛡️ Insurance</Link>
+                  <Link to="/coming-soon?feature=Inspections" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🔧 Inspections</Link>
+                  <Link to="/coming-soon?feature=Shipping" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🚚 Shipping</Link>
                 </div>
               </div>
             </div>
