@@ -9,6 +9,7 @@ import Sell from "./pages/Sell";
 import MyListings from "./pages/MyListings";
 import Subscribe from "./pages/Subscribe";
 import ComingSoon from "./pages/ComingSoon";
+import TradeInValue from "./pages/TradeInValue";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/my-listings" element={<MyListings />} />
           <Route path="/subscribe" element={<Subscribe />} />
           <Route path="/coming-soon" element={<ComingSoon />} />
+          <Route path="/trade-in" element={<TradeInValue />} />
         </Route>
       </Routes>
     </Router>
