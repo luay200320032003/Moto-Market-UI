@@ -171,7 +171,7 @@ const isActive = (pageName: string): boolean => {
               <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-700 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">M</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">MotoTrade</span>
+              <span className="text-2xl font-bold text-gray-900">Moto Markets</span>
             </Link>
 
             {/* Desktop Navigation */}
