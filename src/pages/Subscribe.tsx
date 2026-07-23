@@ -13,11 +13,18 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import { PayPalScriptProvider, PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
 import { Button } from "../Components/ui/button";
 import { getStoredUser, getStoredToken, storeUser } from "../utils/auth";
 import API from "../api";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "");
+
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID ?? "";
+const PAYPAL_PLAN_IDS: Record<PlanId, string> = {
+  user: import.meta.env.VITE_PAYPAL_USER_PLAN_ID ?? "",
+  dealer: import.meta.env.VITE_PAYPAL_DEALER_PLAN_ID ?? "",
+};
 
 const ELEMENT_STYLE = {
   style: {
@@ -197,6 +204,65 @@ function PlansView({
   );
 }
 
+// PayPal's SDK script has to load (and validate the client ID) before
+// <PayPalButtons> can render anything — without this, a bad/placeholder
+// client ID just renders blank space with no indication why.
+function PayPalCheckoutButtons({
+  planId,
+  disabled,
+  onApprove,
+  onError,
+}: {
+  planId: PlanId;
+  disabled: boolean;
+  onApprove: (subscriptionId: string) => Promise<void>;
+  onError: (message: string) => void;
+}) {
+  const [{ isPending, isRejected }] = usePayPalScriptReducer();
+
+  if (!PAYPAL_CLIENT_ID) {
+    return (
+      <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+        PayPal isn't configured yet — set VITE_PAYPAL_CLIENT_ID (and the plan IDs) to enable this.
+      </p>
+    );
+  }
+
+  if (isRejected) {
+    return (
+      <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+        Couldn't load PayPal. Double-check VITE_PAYPAL_CLIENT_ID is a valid client ID.
+      </p>
+    );
+  }
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-300">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading PayPal…
+      </div>
+    );
+  }
+
+  return (
+    <div className={disabled ? "pointer-events-none opacity-50" : ""}>
+      <PayPalButtons
+        style={{ layout: "vertical", color: "gold", shape: "pill", label: "subscribe" }}
+        forceReRender={[planId]}
+        createSubscription={(_data, actions) =>
+          actions.subscription.create({ plan_id: PAYPAL_PLAN_IDS[planId] })
+        }
+        onApprove={async (data) => {
+          if (data.subscriptionID) await onApprove(data.subscriptionID);
+        }}
+        onError={() => onError("PayPal checkout failed. Please try again.")}
+        onCancel={() => onError("")}
+      />
+    </div>
+  );
+}
+
 // ── Step 2: Checkout (must be inside <Elements>) ────────────────────────────
 function CheckoutForm({
   plan,
@@ -220,6 +286,31 @@ function CheckoutForm({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal">("card");
+
+  // Shared by both the Stripe and PayPal paths — updates the locally stored
+  // profile/JWT the same way regardless of which processor confirmed payment.
+  const applySubscriptionResult = async (data: any) => {
+    const returnedPlan = data?.plan ?? data?.subscriptionPlan ?? plan.id;
+    const planValue = (returnedPlan === "user" || returnedPlan === "dealer")
+      ? returnedPlan as "user" | "dealer"
+      : plan.id;
+
+    if (authUser) {
+      storeUser({
+        ...authUser,
+        hasActiveSubscription: true,
+        subscriptionPlan: planValue,
+      });
+    }
+
+    if (data?.token) {
+      const { storeToken } = await import("../utils/auth");
+      storeToken(data.token);
+    }
+
+    onSuccess();
+  };
 
   const handleSubmit = async () => {
     if (!stripe || !elements) {
@@ -232,7 +323,7 @@ function CheckoutForm({
       const cardElement = elements.getElement(CardNumberElement);
       if (!cardElement) throw new Error("Card element not mounted.");
 
-      const { paymentMethod, error: stripeError } = await stripe.createPaymentMethod({
+      const { paymentMethod: stripePaymentMethod, error: stripeError } = await stripe.createPaymentMethod({
         type: "card",
         card: cardElement,
         billing_details: {
@@ -250,38 +341,36 @@ function CheckoutForm({
         plan: plan.id,
         email: authUser?.email,
         nameOnCard,
-        paymentMethodId: paymentMethod.id,
+        paymentMethodId: stripePaymentMethod.id,
       });
 
-      // Update stored profile immediately so the UI reflects the new plan
-      // without requiring a re-login. Backend should return the updated plan
-      // fields; fall back to what we already know if not provided.
-      const returnedPlan = data?.plan ?? data?.subscriptionPlan ?? plan.id;
-      const planValue = (returnedPlan === "user" || returnedPlan === "dealer")
-        ? returnedPlan as "user" | "dealer"
-        : plan.id;
-
-      if (authUser) {
-        storeUser({
-          ...authUser,
-          hasActiveSubscription: true,
-          subscriptionPlan: planValue,
-        });
-      }
-
-      // If the backend returned a new JWT, store it so future API calls
-      // carry updated claims.
-      if (data?.token) {
-        const { storeToken } = await import("../utils/auth");
-        storeToken(data.token);
-      }
-
-      onSuccess();
+      await applySubscriptionResult(data);
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
           err?.message ||
           "Something went wrong. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePayPalApprove = async (subscriptionId: string) => {
+    setError("");
+    setLoading(true);
+    try {
+      const { data } = await API.post("/api/subscription/paypal", {
+        plan: plan.id,
+        email: authUser?.email,
+        subscriptionId,
+      });
+      await applySubscriptionResult(data);
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          err?.message ||
+          "Something went wrong confirming your PayPal subscription. Please try again."
       );
     } finally {
       setLoading(false);
@@ -347,93 +436,156 @@ function CheckoutForm({
               </div>
             </div>
 
-            {/* Payment — real Stripe Elements */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Payment details</h3>
-                <div className="flex items-center gap-2">
-                  {/* Stripe wordmark */}
-                  <svg viewBox="0 0 60 25" className="h-5 w-auto" aria-label="Stripe">
-                    <path
-                      d="M5.5 10.2c0-.7.6-1 1.5-1 1.4 0 3.1.4 4.5 1.1V6.4c-1.5-.6-3-.9-4.5-.9C3.6 5.5 1 7 1 10.4c0 5.3 7.3 4.5 7.3 6.8 0 .8-.7 1.1-1.7 1.1-1.5 0-3.4-.6-4.9-1.5v3.9c1.7.7 3.3 1 4.9 1 3.7 0 6.2-1.5 6.2-4.9-.1-5.7-7.3-4.7-7.3-6.6zm14 -4.6l-3.9.8V9h-2v3h2v5.8c0 2.5 1.2 3.7 3.8 3.7.9 0 2-.2 2.8-.5V18c-.5.2-1 .3-1.6.3-.9 0-1.1-.5-1.1-1.2V12h2.7V9h-2.7V5.6zm8.3 4.2c-.9 0-1.7.3-2.3.9l-.2-.7H22v13.4l3-.6V19c.6.4 1.4.6 2.3.6 2.4 0 4.6-1.9 4.6-5.1 0-3-2.1-4.7-4.1-4.7zm-.7 7.2c-.6 0-1.1-.2-1.4-.5v-4c.4-.4.9-.6 1.5-.6 1.1 0 1.9 1 1.9 2.5s-.8 2.6-2 2.6zm9.7-7.2c-3 0-4.8 2-4.8 5 0 3.3 2 5 5 5 1.4 0 2.7-.3 3.8-1v-2.7c-1 .6-2.1.9-3.2.9-1.3 0-2.4-.6-2.5-2h6.3v-1.2c0-3-1.6-5-4.6-5zm-1.6 4c.1-1.4.9-2 1.7-2 .7 0 1.5.5 1.5 2h-3.2zm12-4c-.8 0-1.7.4-2.1 1.2l-.2-1h-2.5v9.6h3v-6.7c.5-.6 1.3-.8 2.2-.8h.8V9.8c-.4-.1-.8-.2-1.2-.2zm5.5-3.4c-1 0-1.7.7-1.7 1.6 0 .9.7 1.6 1.7 1.6s1.7-.7 1.7-1.6c0-.9-.7-1.6-1.7-1.6zm-1.5 12.6h3V9.8h-3v9.6z"
-                      fill="#635BFF"
-                    />
-                  </svg>
-                  <div className="flex items-center gap-1 rounded-lg bg-green-500/15 border border-green-500/25 px-2 py-0.5">
-                    <Lock className="h-3 w-3 text-green-400" />
-                    <span className="text-[11px] font-semibold text-green-400">SSL</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card number */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1.5">Card number</label>
-                <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors">
-                  <CardNumberElement options={{ ...ELEMENT_STYLE, showIcon: true }} />
-                </div>
-              </div>
-
-              {/* Expiry + CVC */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">Expiry date</label>
-                  <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors">
-                    <CardExpiryElement options={ELEMENT_STYLE} />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">CVC</label>
-                  <div className="relative">
-                    <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors pr-10">
-                      <CardCvcElement options={ELEMENT_STYLE} />
-                    </div>
-                    <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Name on card */}
-              <div>
-                <label className="block text-xs text-gray-400 mb-1.5">Name on card</label>
-                <input
-                  type="text"
-                  placeholder="As it appears on your card"
-                  value={nameOnCard}
-                  onChange={(e) => setNameOnCard(e.target.value)}
-                  className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors"
-                />
-              </div>
-
-              <p className="text-xs text-gray-600 flex items-center gap-1.5">
-                <Lock className="h-3 w-3 shrink-0" />
-                Your card details are encrypted end-to-end and never stored on our servers.
-              </p>
+            {/* Payment method toggle */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setPaymentMethod("card"); setError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+                  paymentMethod === "card" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                <CreditCard className="h-4 w-4" />
+                Card
+              </button>
+              <button
+                type="button"
+                onClick={() => { setPaymentMethod("paypal"); setError(""); }}
+                className={`flex-1 flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+                  paymentMethod === "paypal" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                PayPal
+              </button>
             </div>
 
-            {error && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
+            {paymentMethod === "card" ? (
+              <>
+                {/* Payment — real Stripe Elements */}
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Payment details</h3>
+                    <div className="flex items-center gap-2">
+                      {/* Stripe wordmark */}
+                      <svg viewBox="0 0 60 25" className="h-5 w-auto" aria-label="Stripe">
+                        <path
+                          d="M5.5 10.2c0-.7.6-1 1.5-1 1.4 0 3.1.4 4.5 1.1V6.4c-1.5-.6-3-.9-4.5-.9C3.6 5.5 1 7 1 10.4c0 5.3 7.3 4.5 7.3 6.8 0 .8-.7 1.1-1.7 1.1-1.5 0-3.4-.6-4.9-1.5v3.9c1.7.7 3.3 1 4.9 1 3.7 0 6.2-1.5 6.2-4.9-.1-5.7-7.3-4.7-7.3-6.6zm14 -4.6l-3.9.8V9h-2v3h2v5.8c0 2.5 1.2 3.7 3.8 3.7.9 0 2-.2 2.8-.5V18c-.5.2-1 .3-1.6.3-.9 0-1.1-.5-1.1-1.2V12h2.7V9h-2.7V5.6zm8.3 4.2c-.9 0-1.7.3-2.3.9l-.2-.7H22v13.4l3-.6V19c.6.4 1.4.6 2.3.6 2.4 0 4.6-1.9 4.6-5.1 0-3-2.1-4.7-4.1-4.7zm-.7 7.2c-.6 0-1.1-.2-1.4-.5v-4c.4-.4.9-.6 1.5-.6 1.1 0 1.9 1 1.9 2.5s-.8 2.6-2 2.6zm9.7-7.2c-3 0-4.8 2-4.8 5 0 3.3 2 5 5 5 1.4 0 2.7-.3 3.8-1v-2.7c-1 .6-2.1.9-3.2.9-1.3 0-2.4-.6-2.5-2h6.3v-1.2c0-3-1.6-5-4.6-5zm-1.6 4c.1-1.4.9-2 1.7-2 .7 0 1.5.5 1.5 2h-3.2zm12-4c-.8 0-1.7.4-2.1 1.2l-.2-1h-2.5v9.6h3v-6.7c.5-.6 1.3-.8 2.2-.8h.8V9.8c-.4-.1-.8-.2-1.2-.2zm5.5-3.4c-1 0-1.7.7-1.7 1.6 0 .9.7 1.6 1.7 1.6s1.7-.7 1.7-1.6c0-.9-.7-1.6-1.7-1.6zm-1.5 12.6h3V9.8h-3v9.6z"
+                          fill="#635BFF"
+                        />
+                      </svg>
+                      <div className="flex items-center gap-1 rounded-lg bg-green-500/15 border border-green-500/25 px-2 py-0.5">
+                        <Lock className="h-3 w-3 text-green-400" />
+                        <span className="text-[11px] font-semibold text-green-400">SSL</span>
+                      </div>
+                    </div>
+                  </div>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !stripe}
-              className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-base disabled:opacity-60 shadow-xl shadow-red-600/20"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Processing…
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  <Lock className="h-4 w-4" />
-                  Confirm Subscription — ${plan.price.toFixed(2)}/mo
-                </span>
-              )}
-            </Button>
+                  {/* Card number */}
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1.5">Card number</label>
+                    <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors">
+                      <CardNumberElement options={{ ...ELEMENT_STYLE, showIcon: true }} />
+                    </div>
+                  </div>
+
+                  {/* Expiry + CVC */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1.5">Expiry date</label>
+                      <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors">
+                        <CardExpiryElement options={ELEMENT_STYLE} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-400 mb-1.5">CVC</label>
+                      <div className="relative">
+                        <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3.5 focus-within:border-white/30 transition-colors pr-10">
+                          <CardCvcElement options={ELEMENT_STYLE} />
+                        </div>
+                        <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Name on card */}
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1.5">Name on card</label>
+                    <input
+                      type="text"
+                      placeholder="As it appears on your card"
+                      value={nameOnCard}
+                      onChange={(e) => setNameOnCard(e.target.value)}
+                      className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-white/30 transition-colors"
+                    />
+                  </div>
+
+                  <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                    <Lock className="h-3 w-3 shrink-0" />
+                    Your card details are encrypted end-to-end and never stored on our servers.
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading || !stripe}
+                  className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-base disabled:opacity-60 shadow-xl shadow-red-600/20"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processing…
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Confirm Subscription — ${plan.price.toFixed(2)}/mo
+                    </span>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* Payment — PayPal Buttons */}
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-4">
+                  <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Payment details</h3>
+                  <p className="text-sm text-gray-400">
+                    You'll be redirected to PayPal to approve a recurring ${plan.price.toFixed(2)}/mo subscription, then brought
+                    straight back here.
+                  </p>
+
+                  {loading && (
+                    <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-300">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Confirming your subscription…
+                    </div>
+                  )}
+
+                  <PayPalCheckoutButtons
+                    planId={plan.id}
+                    disabled={loading}
+                    onApprove={handlePayPalApprove}
+                    onError={setError}
+                  />
+
+                  <p className="text-xs text-gray-600 flex items-center gap-1.5">
+                    <Lock className="h-3 w-3 shrink-0" />
+                    Your PayPal credentials are entered on PayPal's site and never touch our servers.
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+                    {error}
+                  </div>
+                )}
+              </>
+            )}
 
             <p className="text-center text-xs text-gray-600">
               By subscribing you agree to our Terms of Service. Cancel any time.
@@ -744,12 +896,14 @@ export default function Subscribe() {
   if (step === "checkout") {
     return (
       <Elements stripe={stripePromise}>
-        <CheckoutForm
-          plan={selectedPlan}
-          authUser={authUser}
-          onBack={() => setStep("plans")}
-          onSuccess={() => setStep("success")}
-        />
+        <PayPalScriptProvider options={{ clientId: PAYPAL_CLIENT_ID, vault: true, intent: "subscription" }}>
+          <CheckoutForm
+            plan={selectedPlan}
+            authUser={authUser}
+            onBack={() => setStep("plans")}
+            onSuccess={() => setStep("success")}
+          />
+        </PayPalScriptProvider>
       </Elements>
     );
   }
