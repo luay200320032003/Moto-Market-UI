@@ -80,28 +80,28 @@ export function isListingsBlocked(user: AuthUser | null): boolean {
 }
 
 export function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_STORAGE_KEY);
+  return sessionStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
 export function storeToken(token: string): void {
-  localStorage.setItem(TOKEN_STORAGE_KEY, token);
+  sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
 }
 
 export function clearStoredToken(): void {
-  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  sessionStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
 export function storeUser(user: AuthUser | null): void {
   if (!user) {
-    try { localStorage.removeItem(USER_STORAGE_KEY); } catch {}
+    try { sessionStorage.removeItem(USER_STORAGE_KEY); } catch {}
     return;
   }
-  try { localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user)); } catch {}
+  try { sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user)); } catch {}
 }
 
 export function getStoredUser(): AuthUser | null {
   try {
-    const v = localStorage.getItem(USER_STORAGE_KEY);
+    const v = sessionStorage.getItem(USER_STORAGE_KEY);
     if (!v) return null;
     return JSON.parse(v) as AuthUser;
   } catch {
@@ -110,7 +110,7 @@ export function getStoredUser(): AuthUser | null {
 }
 
 export function clearStoredUser(): void {
-  try { localStorage.removeItem(USER_STORAGE_KEY); } catch {}
+  try { sessionStorage.removeItem(USER_STORAGE_KEY); } catch {}
 }
 
 function decodeBase64Url(value: string): string {

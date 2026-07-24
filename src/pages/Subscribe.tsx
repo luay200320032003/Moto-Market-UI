@@ -43,7 +43,7 @@ const PLANS = [
   {
     id: "user",
     name: "User",
-    price: 9.99,
+    price: 14.99,
     description: "For individual sellers who want to list their bikes",
     features: [
       "Up to 5 active listings",
