@@ -43,7 +43,7 @@ const PLANS = [
   {
     id: "user",
     name: "User",
-    price: 9.99,
+    price: 14.99,
     description: "For individual sellers who want to list their bikes",
     features: [
       "Up to 5 active listings",
@@ -304,9 +304,10 @@ function CheckoutForm({
       });
     }
 
-    if (data?.token) {
+    const newToken = data?.accessToken ?? data?.token;
+    if (newToken) {
       const { storeToken } = await import("../utils/auth");
-      storeToken(data.token);
+      storeToken(newToken);
     }
 
     onSuccess();
