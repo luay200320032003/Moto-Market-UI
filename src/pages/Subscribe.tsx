@@ -304,9 +304,10 @@ function CheckoutForm({
       });
     }
 
-    if (data?.token) {
+    const newToken = data?.accessToken ?? data?.token;
+    if (newToken) {
       const { storeToken } = await import("../utils/auth");
-      storeToken(data.token);
+      storeToken(newToken);
     }
 
     onSuccess();
