@@ -67,6 +67,7 @@ function mapToMotorcycle(m: any): Motorcycle {
     displacement_cc: m.displacementCC ?? build.displacementCC ?? undefined,
     engine_cylinders: m.engineCylinders ?? build.engineCylinders ?? undefined,
     horsepower: m.engineBrakeHp ?? build.engineBrakeHp ?? undefined,
+    hasDealerEmail: typeof m.hasDealerEmail === "boolean" ? m.hasDealerEmail : undefined,
   };
 }
 
