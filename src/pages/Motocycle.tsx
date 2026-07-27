@@ -472,7 +472,12 @@ export default function Motocycle() {
         <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
           <h2 className="text-xl font-semibold mb-3 text-gray-800">Contact Dealer</h2>
 
-          {contactSent ? (
+          {motorcycle.hasDealerEmail === false ? (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Dealer email is not provided for this listing, so we're unable to send a message.</span>
+            </div>
+          ) : contactSent ? (
             <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
               <span>Your message has been sent! The dealer will contact you soon.</span>

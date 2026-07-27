@@ -32,6 +32,10 @@ export interface Motorcycle {
   engine_cylinders?: string;
   horsepower?: string;
   engine_description?: string;
+  // Whether the backend can actually resolve a dealer/seller email to send
+  // a contact message to. Absent (undefined) until the backend adds support —
+  // treat as available in that case so nothing breaks before that ships.
+  hasDealerEmail?: boolean;
 }
 
 // Example function to fetch motorcycles (replace with real API call as needed)
