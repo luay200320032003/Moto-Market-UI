@@ -36,6 +36,9 @@ export interface Motorcycle {
   // a contact message to. Absent (undefined) until the backend adds support —
   // treat as available in that case so nothing breaks before that ships.
   hasDealerEmail?: boolean;
+  // The id of the user who owns this listing (source === "listing" only).
+  // Used to hide the "Contact Dealer" form when the viewer is the owner.
+  seller_user_id?: number;
 }
 
 // Example function to fetch motorcycles (replace with real API call as needed)

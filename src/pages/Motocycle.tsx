@@ -38,6 +38,7 @@ export default function Motocycle() {
   const location = useLocation();
   const motorcycleId = searchParams.get("id");
   const isListing = searchParams.get("type") === "listing";
+  const isOwnListing = isListing && authUser?.id != null && motorcycle?.seller_user_id === authUser.id;
 
   useEffect(() => {
     if (!motorcycleId) {
@@ -444,9 +445,9 @@ export default function Motocycle() {
       })()}
 
       {/* Dealer Info */}
-      <div className="mt-10 grid md:grid-cols-2 gap-6">
+      <div className={`mt-10 grid gap-6 ${isOwnListing ? "" : "md:grid-cols-2"}`}>
         <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
-          <h2 className="text-xl font-semibold mb-3 text-gray-800">Dealer Information</h2>
+          <h2 className="text-xl font-semibold mb-3 text-gray-800">{isListing ? "Seller Information" : "Dealer Information"}</h2>
           <p className="font-bold text-gray-900">{motorcycle.seller_name}</p>
           <p className="text-gray-700">{motorcycle.location}</p>
           <p className="text-gray-700">{(motorcycle as any).dealer?.street}</p>
@@ -468,19 +469,20 @@ export default function Motocycle() {
           </div>
         </div>
 
-        {/* Contact Form */}
+        {/* Contact Form — hidden entirely on your own listing */}
+        {!isOwnListing && (
         <div className="bg-white border border-gray-200 p-5 rounded-xl shadow-sm">
-          <h2 className="text-xl font-semibold mb-3 text-gray-800">Contact Dealer</h2>
+          <h2 className="text-xl font-semibold mb-3 text-gray-800">{isListing ? "Contact Seller" : "Contact Dealer"}</h2>
 
           {motorcycle.hasDealerEmail === false ? (
             <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Dealer email is not provided for this listing, so we're unable to send a message.</span>
+              <span>{isListing ? "Seller" : "Dealer"} email is not provided for this listing, so we're unable to send a message.</span>
             </div>
           ) : contactSent ? (
             <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>Your message has been sent! The dealer will contact you soon.</span>
+              <span>Your message has been sent! The {isListing ? "seller" : "dealer"} will contact you soon.</span>
             </div>
           ) : (
             <form
@@ -545,6 +547,7 @@ export default function Motocycle() {
             </form>
           )}
         </div>
+        )}
       </div>
 
       {/* Similar Bikes */}

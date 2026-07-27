@@ -68,6 +68,7 @@ function mapToMotorcycle(m: any): Motorcycle {
     engine_cylinders: m.engineCylinders ?? build.engineCylinders ?? undefined,
     horsepower: m.engineBrakeHp ?? build.engineBrakeHp ?? undefined,
     hasDealerEmail: typeof m.hasDealerEmail === "boolean" ? m.hasDealerEmail : undefined,
+    seller_user_id: typeof m.sellerUserId === "number" ? m.sellerUserId : undefined,
   };
 }
 
