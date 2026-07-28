@@ -39,6 +39,10 @@ export interface Motorcycle {
   // The id of the user who owns this listing (source === "listing" only).
   // Used to hide the "Contact Dealer" form when the viewer is the owner.
   seller_user_id?: number;
+  // The seller-written (or AI-generated) listing description, straight from
+  // the backend — distinct from `description` above, which is a synthesized
+  // summary string built client-side from build attributes, not real prose.
+  listing_description?: string;
 }
 
 // Example function to fetch motorcycles (replace with real API call as needed)

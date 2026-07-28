@@ -336,6 +336,14 @@ export default function Motocycle() {
         </div>
       </div>
 
+      {/* Description */}
+      {motorcycle.listing_description && (
+        <div className="mt-8 bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h2 className="text-xl font-semibold mb-3 text-gray-800">Description</h2>
+          <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">{motorcycle.listing_description}</p>
+        </div>
+      )}
+
       {/* AI Price Negotiation Assistant */}
       {(() => {
         const daysListed = motorcycle.created_date
