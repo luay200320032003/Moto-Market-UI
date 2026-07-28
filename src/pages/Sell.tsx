@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X, AlertTriangle, Clock } from "lucide-react";
+import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Loader2, X, AlertTriangle, Clock, Sparkles, AlertCircle } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Components/ui/select";
 import { getStoredToken, getStoredUser, canCreateListing, maxPhotosForUser } from "../utils/auth";
@@ -94,6 +94,10 @@ export default function Sell() {
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [aiNotes, setAiNotes] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiGenError, setAiGenError] = useState("");
+
   const [publishError, setPublishError] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [modalEmail, setModalEmail] = useState("");
@@ -103,6 +107,29 @@ export default function Sell() {
 
   const set = (field: keyof SellFormState, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleGenerateDescription = async () => {
+    setAiGenError("");
+    setAiGenerating(true);
+    try {
+      const { data } = await API.post<{ description?: string }>("/api/ai/generate-description", {
+        make: form.make,
+        model: form.model,
+        year: Number(form.year) || 0,
+        miles: form.mileage ? Number(form.mileage) : 0,
+        price: form.price ? Number(form.price) : 0,
+        condition: form.condition,
+        color: form.color || undefined,
+        engine: form.engineSize ? `${form.engineSize} cc` : undefined,
+        sellerNotes: aiNotes || undefined,
+      });
+      if (data?.description) set("description", data.description);
+    } catch (err: any) {
+      setAiGenError(err?.response?.data?.message || err?.message || "Failed to generate a description.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
 
   const handleFilesSelected = (files: FileList | null) => {
     if (!files) return;
@@ -276,6 +303,38 @@ export default function Sell() {
       <Field label="Listing title" required>
         <input className={inputCls} value={form.title} onChange={(e) => set("title", e.target.value)} />
       </Field>
+
+      <div className="rounded-2xl border-2 border-dashed border-purple-200 bg-purple-50/50 p-4 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-semibold text-purple-800">
+          <Sparkles className="h-4 w-4" />
+          Let AI write your description
+        </div>
+        <input
+          type="text"
+          placeholder="Anything extra to mention? (optional — e.g. new tires, garage kept)"
+          value={aiNotes}
+          onChange={(e) => setAiNotes(e.target.value)}
+          className="w-full rounded-xl border border-purple-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-purple-400"
+        />
+        <button
+          type="button"
+          onClick={handleGenerateDescription}
+          disabled={aiGenerating || !form.make || !form.model || !form.year}
+          className="flex items-center gap-2 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-sm font-semibold text-white transition-colors"
+        >
+          {aiGenerating ? <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</> : <><Sparkles className="h-4 w-4" /> Generate Description</>}
+        </button>
+        {!form.make || !form.model || !form.year ? (
+          <p className="text-xs text-purple-600">Fill in make, model, and year first so the AI has something to work with.</p>
+        ) : null}
+        {aiGenError && (
+          <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            {aiGenError}
+          </div>
+        )}
+      </div>
+
       <Field label="Description" required>
         <textarea
           value={form.description}

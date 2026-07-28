@@ -218,7 +218,7 @@ const isActive = (pageName: string): boolean => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/coming-soon?feature=Selling%20Tips" className="flex items-center w-full">
+                    <Link to="/selling-tips" className="flex items-center w-full">
                       📋 Selling Tips
                     </Link>
                   </DropdownMenuItem>
@@ -375,7 +375,7 @@ const isActive = (pageName: string): boolean => {
                 <div className="text-sm font-medium mb-2">Services</div>
                 <div className="space-y-1 text-sm">
                   <Link to="/trade-in" className="block py-1" onClick={() => setMobileMenuOpen(false)}>📊 Get Trade-In Value</Link>
-                  <Link to="/coming-soon?feature=Selling%20Tips" className="block py-1" onClick={() => setMobileMenuOpen(false)}>📋 Selling Tips</Link>
+                  <Link to="/selling-tips" className="block py-1" onClick={() => setMobileMenuOpen(false)}>📋 Selling Tips</Link>
                   <Link to="/coming-soon?feature=Financing" className="block py-1" onClick={() => setMobileMenuOpen(false)}>💰 Financing</Link>
                   <Link to="/coming-soon?feature=Insurance" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🛡️ Insurance</Link>
                   <Link to="/coming-soon?feature=Inspections" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🔧 Inspections</Link>
