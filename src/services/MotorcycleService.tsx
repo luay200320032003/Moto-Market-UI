@@ -5,11 +5,16 @@ interface GetMotorcyclesParams {
   limit?: number;
   page?: number;
   pageSize?: number;
+  keyword?: string;
   make?: string;
   model?: string;
   year?: number;
   category?: string;
   color?: string;
+  minYear?: number;
+  maxYear?: number;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";

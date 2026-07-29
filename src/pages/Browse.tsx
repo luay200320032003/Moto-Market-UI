@@ -31,8 +31,11 @@ export default function Browse() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
 
-  // Filter states
-  const [searchQuery, setSearchQuery] = useState("");
+  // Filter states — seed the keyword from a homepage search redirect (?search=...)
+  const [searchQuery, setSearchQuery] = useState(
+    () => new URLSearchParams(location.search).get("search") ?? ""
+  );
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const [selectedMake, setSelectedMake] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("any");
   const [selectedCondition, setSelectedCondition] = useState("any");
@@ -40,21 +43,35 @@ export default function Browse() {
   const [yearRange, setYearRange] = useState<[number, number]>([1990, 2030]);
   const [sortBy, setSortBy] = useState("newest");
 
-  // Reset to page 1 when filters change
-  useEffect(() => { setCurrentPage(1); }, [selectedMake, selectedCategory, selectedCondition, priceRange, yearRange, sortBy, searchQuery]);
+  // Debounce free-text search so it doesn't fire a request on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 400);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
-  // Fetch one page from the API
+  // Reset to page 1 whenever a server-side filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedMake, selectedCategory, priceRange, yearRange, debouncedQuery]);
+
+  // Fetch a page from the API — search/make/category/year/price are now
+  // filtered server-side, so this is a real search, not just page 1's contents.
   useEffect(() => {
     let cancelled = false;
     const fetchPage = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const urlParams = Object.fromEntries(new URLSearchParams(location.search));
         const { motorcycles: bikes, hasNextPage: more } = await getMotorcycles({
-          ...urlParams,
           page: currentPage,
           pageSize: PAGE_SIZE,
+          keyword: debouncedQuery || undefined,
+          make: selectedMake !== "all" ? selectedMake : undefined,
+          category: selectedCategory !== "any" ? selectedCategory : undefined,
+          minYear: yearRange[0],
+          maxYear: yearRange[1],
+          minPrice: priceRange[0],
+          maxPrice: priceRange[1],
         });
         if (cancelled) return;
         setMotorcycles(bikes);
@@ -69,7 +86,7 @@ export default function Browse() {
     };
     fetchPage();
     return () => { cancelled = true; };
-  }, [currentPage, location.search]);
+  }, [currentPage, debouncedQuery, selectedMake, selectedCategory, priceRange, yearRange]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -81,20 +98,11 @@ export default function Browse() {
     setSortBy("newest");
   };
 
-  // Client-side filter + sort on current page
+  // make/category/keyword/price/year are now filtered server-side (see the
+  // fetch effect above) — condition isn't supported by the backend search
+  // yet, so it's still filtered here on whatever page came back.
   const pagedMotorcycles = motorcycles
-    .filter((bike) => {
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        if (![bike.title, bike.make, bike.model, bike.description].some((f) => f?.toLowerCase().includes(q))) return false;
-      }
-      if (selectedMake !== "all" && bike.make !== selectedMake) return false;
-      if (selectedCategory !== "any" && bike.category !== selectedCategory) return false;
-      if (selectedCondition !== "any" && bike.condition !== selectedCondition) return false;
-      if (bike.price < priceRange[0] || bike.price > priceRange[1]) return false;
-      if (bike.year < yearRange[0] || bike.year > yearRange[1]) return false;
-      return true;
-    })
+    .filter((bike) => selectedCondition === "any" || bike.condition === selectedCondition)
     .sort((a, b) => {
       switch (sortBy) {
         case "price-low":    return (a.price || 0) - (b.price || 0);
