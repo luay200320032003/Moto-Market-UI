@@ -78,11 +78,21 @@ function mapToMotorcycle(m: any): Motorcycle {
   };
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
- * Fetch multiple motorcycles
+ * Fetch multiple motorcycles.
+ *
+ * Retries a couple of times on failure before giving up — after the backend
+ * has been idle a while (e.g. an App Service cold start), the very first
+ * request can time out or drop while the app spins back up, even though a
+ * retry a moment later succeeds. Without this, callers used to silently get
+ * an empty list on that first failed attempt, which looked like "no
+ * motorcycles" instead of "the request failed."
  */
 export async function getMotorcycles(
-  params: GetMotorcyclesParams = {}
+  params: GetMotorcyclesParams = {},
+  retriesLeft = 2
 ): Promise<{ motorcycles: Motorcycle[]; hasNextPage: boolean }> {
   try {
     const { data }: { data: any } = await API.get("/api/marketplace", { params });
@@ -105,8 +115,12 @@ export async function getMotorcycles(
 
     return { motorcycles, hasNextPage };
   } catch (error: any) {
+    if (retriesLeft > 0) {
+      await sleep(1000 * (3 - retriesLeft)); // 1s, then 2s
+      return getMotorcycles(params, retriesLeft - 1);
+    }
     console.error("Error fetching motorcycles:", error?.message);
-    return { motorcycles: [], hasNextPage: false };
+    throw error;
   }
 }
 

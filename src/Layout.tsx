@@ -83,7 +83,7 @@ const isActive = (pageName: string): boolean => {
           <div className="flex justify-between items-center h-10">
             <div className="flex items-center space-x-6">
               <span>🏍️ Find Your Perfect Ride</span>
-              <span className="hidden md:inline">📞 615-625-6055</span>
+              <Link to="/contact-us" className="hidden md:inline hover:text-gray-300 transition-colors">Contact Us</Link>
             </div>
             <div className="flex items-center space-x-4">
               {!isLoading && (
@@ -382,6 +382,16 @@ const isActive = (pageName: string): boolean => {
                   <Link to="/coming-soon?feature=Shipping" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🚚 Shipping</Link>
                 </div>
               </div>
+
+              <div className="border-t border-gray-200 my-2"></div>
+
+              <Link
+                to="/contact-us"
+                className="flex items-center px-3 py-2 rounded-lg text-gray-700"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                📞 Contact Us
+              </Link>
             </div>
           </div>
         )}
