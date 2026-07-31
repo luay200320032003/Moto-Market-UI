@@ -53,9 +53,13 @@ export default function Motocycle() {
         const bike = await getMotorcycleById(motorcycleId, isListing ? "listing" : "market");
         setMotorcycle(bike);
 
-        // Fetch similar bikes
-        const { motorcycles: bikes } = await getMotorcycles({ limit: 4 });
-        setSimilar(bikes.filter((b) => b.id.toString() !== motorcycleId).slice(0, 4));
+        // Fetch similar bikes — a failure here shouldn't block the main bike from showing
+        try {
+          const { motorcycles: bikes } = await getMotorcycles({ limit: 4 });
+          setSimilar(bikes.filter((b) => b.id.toString() !== motorcycleId).slice(0, 4));
+        } catch (similarErr) {
+          console.error("Error fetching similar bikes:", similarErr);
+        }
       } catch (err: any) {
         console.error("Error fetching motorcycle:", err);
         setError("Failed to fetch motorcycle details.");
