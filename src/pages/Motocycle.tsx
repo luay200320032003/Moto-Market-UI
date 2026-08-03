@@ -139,7 +139,7 @@ export default function Motocycle() {
         Back to listings
       </button>
 
-      {/* Trial / grace period banner â€” only on user's own listings */}
+      {/* Trial / grace period banner — only on user's own listings */}
       {isListing && (blocked || inGrace || onTrial) && (
         <div className={`mb-6 flex items-center justify-between gap-4 rounded-2xl px-5 py-3.5 text-sm font-medium ${
           blocked ? "bg-red-50 border border-red-200 text-red-700"
@@ -148,7 +148,7 @@ export default function Motocycle() {
         }`}>
           <span>
             {blocked
-              ? "Your listing is currently paused â€” subscribe to reactivate it."
+              ? "Your listing is currently paused — subscribe to reactivate it."
               : inGrace
               ? `Grace period: ${daysLeft} day${daysLeft !== 1 ? "s" : ""} left before this listing is paused.`
               : `Free trial: ${trialLeft} day${trialLeft !== 1 ? "s" : ""} remaining on your account.`}
@@ -239,7 +239,7 @@ export default function Motocycle() {
 
               {motorcycle.vin ? (
                 getStoredToken() ? (
-                  /* Logged in â€” show full VIN + Check VIN button */
+                  /* Logged in — show full VIN + Check VIN button */
                   <div className="flex items-center gap-3 flex-wrap">
                     <span className="font-mono font-medium text-gray-800">{motorcycle.vin}</span>
                     <button
@@ -248,11 +248,11 @@ export default function Motocycle() {
                       className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
                     >
                       {vinLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                      {vinLoading ? "Checkingâ€¦" : "Check VIN"}
+                      {vinLoading ? "Checking…" : "Check VIN"}
                     </button>
                   </div>
                 ) : (
-                  /* Not logged in â€” masked VIN with login prompt */
+                  /* Not logged in — masked VIN with login prompt */
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
@@ -399,11 +399,11 @@ export default function Motocycle() {
                 </div>
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
                   <p className="text-xs text-gray-500">Days Listed</p>
-                  <p className="text-lg font-bold text-gray-900">{daysListed ?? "â€”"}</p>
+                  <p className="text-lg font-bold text-gray-900">{daysListed ?? "—"}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
                   <p className="text-xs text-gray-500">Mileage</p>
-                  <p className="text-lg font-bold text-gray-900">{motorcycle.mileage ? `${motorcycle.mileage.toLocaleString()} mi` : "â€”"}</p>
+                  <p className="text-lg font-bold text-gray-900">{motorcycle.mileage ? `${motorcycle.mileage.toLocaleString()} mi` : "—"}</p>
                 </div>
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-center">
                   <p className="text-xs text-gray-500">Condition</p>
@@ -436,7 +436,7 @@ export default function Motocycle() {
                   disabled={aiLoading}
                   className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-purple-700 px-5 py-2.5 text-sm font-semibold text-white hover:from-violet-700 hover:to-purple-800 disabled:opacity-60 transition-all"
                 >
-                  {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysingâ€¦</> : <><Sparkles className="h-4 w-4" /> {aiSuggestion ? "Re-analyse" : "Get AI Offer Suggestion"}</>}
+                  {aiLoading ? <><Loader2 className="h-4 w-4 animate-spin" /> Analysing…</> : <><Sparkles className="h-4 w-4" /> {aiSuggestion ? "Re-analyse" : "Get AI Offer Suggestion"}</>}
                 </button>
               ) : (
                 <div className="flex items-center gap-3">
@@ -464,7 +464,7 @@ export default function Motocycle() {
           <p className="text-gray-700">{motorcycle.location}</p>
           <p className="text-gray-700">{(motorcycle as any).dealer?.street}</p>
           <p className="text-gray-700">
-            {(motorcycle as any).dealer?.city}, {(motorcycle as any).dealer?.state}{" "}
+            {(motorcycle as any).dealer?.city}  {(motorcycle as any).dealer?.state}{" "}
             {(motorcycle as any).dealer?.zip}
           </p>
           <div className="flex flex-col gap-1 mt-2">
@@ -479,6 +479,28 @@ export default function Motocycle() {
               </a>
             )}
           </div>
+
+          {motorcycle.latitude && motorcycle.longitude && (
+            <div className="mt-4 overflow-hidden rounded-lg border border-gray-200">
+              <iframe
+                title="Dealer location map"
+                width="100%"
+                height="220"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://maps.google.com/maps?q=${motorcycle.latitude},${motorcycle.longitude}&z=14&output=embed`}
+              />
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${motorcycle.latitude},${motorcycle.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+                className="block bg-gray-50 px-3 py-1.5 text-center text-xs text-blue-600 hover:underline"
+              >
+                Open in Google Maps
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Contact Form — hidden entirely on your own listing */}
@@ -554,7 +576,7 @@ export default function Motocycle() {
                 disabled={contactSending}
                 className="bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 w-full transition disabled:opacity-60 flex items-center justify-center gap-2"
               >
-                {contactSending ? <><Loader2 className="h-4 w-4 animate-spin" /> Sendingâ€¦</> : "Send Message"}
+                {contactSending ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : "Send Message"}
               </button>
             </form>
           )}

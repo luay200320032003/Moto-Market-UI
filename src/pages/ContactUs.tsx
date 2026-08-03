@@ -33,8 +33,8 @@ const CONTACT_METHODS: ContactMethod[] = [
   {
     icon: Mail,
     label: "Email",
-    value: "support@mototrade.com",
-    href: "mailto:support@mototrade.com",
+    value: "noreply@motosmarketplace.com",
+    href: "mailto:noreply@motosmarketplace.com",
     note: "We typically reply within one business day.",
     accent: "from-indigo-600 to-blue-600",
     ring: "group-hover:ring-indigo-100",
@@ -140,7 +140,7 @@ export default function ContactUs() {
         <div className="mt-10 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 p-6 text-center">
           <p className="text-sm text-gray-700">
             Still have questions?{" "}
-            <a href="mailto:support@mototrade.com" className="font-semibold text-indigo-700 hover:underline">
+            <a href="mailto:noreply@motosmarketplace.com" className="font-semibold text-indigo-700 hover:underline">
               Email our team
             </a>{" "}
             and we'll get back to you.
