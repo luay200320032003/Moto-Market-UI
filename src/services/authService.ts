@@ -10,8 +10,6 @@ interface LoginPayload {
 type AuthResponse = Record<string, unknown>;
 
 const loginEndpoint = import.meta.env.VITE_AUTH_LOGIN_ENDPOINT ?? "/api/auth/login";
-const individualSsoEndpoint =
-  import.meta.env.VITE_AUTH_INDIVIDUAL_SSO_ENDPOINT ?? "/api/auth/sso/individual";
 
 function getNestedValue<T>(source: Record<string, unknown>, key: string): T | undefined {
   const value = source[key];
@@ -94,13 +92,42 @@ export async function login(payload: LoginPayload): Promise<string> {
   return token;
 }
 
-export function getIndividualSsoLoginUrl(returnUrl: string): string {
-  const resolvedBase = API.defaults.baseURL ?? window.location.origin;
-  const ssoUrl = new URL(individualSsoEndpoint, resolvedBase);
+interface GoogleAuthResponse {
+  accessToken: string;
+  refreshToken?: string;
+  accessTokenExpiresAtUtc?: string;
+  user: {
+    id: number;
+    email: string;
+    username?: string;
+    displayName?: string;
+    firstName?: string;
+    lastName?: string;
+    roles?: string[];
+    trialEndsAt?: string;
+    hasActiveSubscription?: boolean;
+  };
+}
 
-  ssoUrl.searchParams.set("returnUrl", returnUrl);
+/**
+ * Exchanges a Google Identity Services ID token (obtained client-side) for
+ * our own JWT, via POST /api/sso/google — a token exchange, not a redirect.
+ */
+export async function loginWithGoogle(idToken: string): Promise<void> {
+  const { data } = await API.post<GoogleAuthResponse>("/api/sso/google", { idToken });
 
-  return ssoUrl.toString();
+  storeToken(data.accessToken);
+
+  const u = data.user;
+  storeUser({
+    id: u.id,
+    email: u.email,
+    full_name: u.displayName ?? undefined,
+    firstName: u.firstName ?? undefined,
+    lastName: u.lastName ?? undefined,
+    trialEndsAt: u.trialEndsAt ?? undefined,
+    hasActiveSubscription: u.hasActiveSubscription ?? undefined,
+  });
 }
 
 export function logout(): void {

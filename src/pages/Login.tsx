@@ -1,10 +1,32 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
-import { getIndividualSsoLoginUrl, login } from "../services/authService";
-import { getStoredToken, storeToken } from "../utils/auth";
+import { login, loginWithGoogle } from "../services/authService";
+import { getStoredToken } from "../utils/auth";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
+function loadGoogleIdentityScript(): Promise<void> {
+  if ((window as any).google?.accounts?.id) return Promise.resolve();
+
+  const existing = document.getElementById("google-identity-script");
+  if (existing) {
+    return new Promise((resolve) => existing.addEventListener("load", () => resolve()));
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = "google-identity-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Google Sign-In."));
+    document.head.appendChild(script);
+  });
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -33,51 +55,54 @@ export default function Login() {
     return from ?? "/";
   }, [location.state, searchParams]);
 
-  const individualSsoReturnUrl = useMemo(() => {
-    const callbackUrl = new URL(`${window.location.origin}/login`);
-
-    callbackUrl.searchParams.set("accountType", "individual");
-    callbackUrl.searchParams.set("returnTo", redirectTarget);
-
-    return callbackUrl.toString();
-  }, [redirectTarget]);
-
   useEffect(() => {
     if (getStoredToken()) {
       navigate(redirectTarget, { replace: true });
     }
   }, [navigate, redirectTarget]);
 
-  useEffect(() => {
-    const hashParams = new URLSearchParams(location.hash.replace(/^#/, ""));
-    const token =
-      searchParams.get("token") ??
-      searchParams.get("access_token") ??
-      hashParams.get("token") ??
-      hashParams.get("access_token");
-    const authError =
-      searchParams.get("error_description") ??
-      searchParams.get("error") ??
-      hashParams.get("error_description") ??
-      hashParams.get("error");
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
-    if (!token) {
-      if (authError) {
-        setError(authError);
+  const googleConfigured = !!GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes("placeholder");
+
+  useEffect(() => {
+    if (isDealerLogin || !googleConfigured) return;
+    let cancelled = false;
+
+    const handleCredential = async (response: { credential?: string }) => {
+      if (!response.credential) return;
+      setError("");
+      setIsSsoSubmitting(true);
+      try {
+        await loginWithGoogle(response.credential);
+        navigate(redirectTarget, { replace: true });
+      } catch (err: any) {
+        setError(err?.response?.data?.message || err?.message || "Google sign-in failed. Please try again.");
+      } finally {
         setIsSsoSubmitting(false);
       }
-      return;
-    }
+    };
 
-    storeToken(token);
-    navigate(redirectTarget, { replace: true });
-  }, [location.hash, navigate, redirectTarget, searchParams]);
+    loadGoogleIdentityScript()
+      .then(() => {
+        if (cancelled || !googleButtonRef.current) return;
+        const google = (window as any).google;
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredential,
+        });
+        google.accounts.id.renderButton(googleButtonRef.current, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          width: googleButtonRef.current.offsetWidth || 360,
+          text: "continue_with",
+        });
+      })
+      .catch((err) => setError(err.message));
 
-  const handleIndividualSso = () => {
-    setError("");
-    setIsSsoSubmitting(true);
-    window.location.assign(getIndividualSsoLoginUrl(individualSsoReturnUrl));
-  };
+    return () => { cancelled = true; };
+  }, [isDealerLogin, navigate, redirectTarget]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -148,15 +173,20 @@ export default function Login() {
 
             {!isDealerLogin && (
               <>
-                <Button
-                  type="button"
-                  disabled={isSubmitting || isSsoSubmitting}
-                  onClick={handleIndividualSso}
-                  className="h-11 w-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
-                >
-                  {isSsoSubmitting ? "Redirecting to SSO..." : "Continue with your SSO"}
-                  {!isSsoSubmitting && <ArrowRight className="h-4 w-4" />}
-                </Button>
+                {googleConfigured ? (
+                  <>
+                    <div className={isSsoSubmitting ? "pointer-events-none opacity-60" : ""}>
+                      <div ref={googleButtonRef} className="flex w-full justify-center" />
+                    </div>
+                    {isSsoSubmitting && (
+                      <p className="mt-2 text-center text-xs text-gray-500">Signing in with Google…</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-700">
+                    Google Sign-In isn't configured yet — set VITE_GOOGLE_CLIENT_ID to enable it.
+                  </p>
+                )}
 
                 <div className="my-6 flex items-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-gray-400">
                   <div className="h-px flex-1 bg-gray-200" />
