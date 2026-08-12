@@ -5,6 +5,7 @@ import { Button } from "../Components/ui/button";
 import { Input } from "../Components/ui/input";
 import { login, loginWithGoogle } from "../services/authService";
 import { getStoredToken } from "../utils/auth";
+import { getApiErrorMessage } from "../utils/apiError";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
@@ -76,8 +77,8 @@ export default function Login() {
       try {
         await loginWithGoogle(response.credential);
         navigate(redirectTarget, { replace: true });
-      } catch (err: any) {
-        setError(err?.response?.data?.message || err?.message || "Google sign-in failed. Please try again.");
+      } catch (err) {
+        setError(getApiErrorMessage(err, "Google sign-in failed. Please try again."));
       } finally {
         setIsSsoSubmitting(false);
       }
@@ -117,20 +118,7 @@ export default function Login() {
 
       navigate(redirectTarget, { replace: true });
     } catch (err: unknown) {
-      const fallbackMessage = "Unable to sign in. Check your email, password, or backend endpoint.";
-
-      if (
-        typeof err === "object" &&
-        err !== null &&
-        "response" in err &&
-        typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
-      ) {
-        setError((err as { response?: { data?: { message?: string } } }).response!.data!.message!);
-      } else if (err instanceof Error) {
-        setError(err.message || fallbackMessage);
-      } else {
-        setError(fallbackMessage);
-      }
+      setError(getApiErrorMessage(err, "Unable to sign in. Check your email and password."));
     } finally {
       setIsSubmitting(false);
     }
