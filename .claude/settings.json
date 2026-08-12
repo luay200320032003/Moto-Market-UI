@@ -4,7 +4,9 @@
       "Bash(npm run *)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:5173/login\")",
       "Bash(taskkill //PID 34580 //F)",
-      "Bash(taskkill //PID 36872 //F)"
+      "Bash(taskkill //PID 36872 //F)",
+      "PowerShell(Get-Process -Name node -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)"
     ]
   }
 }
