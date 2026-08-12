@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { PlusCircle, Bike, MapPin, Calendar, DollarSign, AlertCircle, Clock, Lock } from "lucide-react";
+import { PlusCircle, Bike, MapPin, Calendar, DollarSign, AlertCircle, Clock, Lock, Trash2, Loader2 } from "lucide-react";
 import { Button } from "../Components/ui/button";
 import { getStoredToken, getStoredUser, isInGracePeriod, graceDaysLeft, isListingsBlocked, isTrialActive, trialDaysLeft } from "../utils/auth";
 import API from "../api";
@@ -36,6 +36,9 @@ export default function MyListings() {
   const [listings, setListings] = useState<MyListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const authUser      = getStoredUser();
   const isSubscribed  = !!authUser?.hasActiveSubscription;
@@ -102,6 +105,20 @@ export default function MyListings() {
     load();
     return () => { cancelled = true; };
   }, [navigate]);
+
+  const handleDelete = async (id: string | number) => {
+    setDeleteError(null);
+    setDeletingId(id);
+    try {
+      await API.delete(`/api/listings/${id}`);
+      setListings((prev) => prev.filter((l) => l.id !== id));
+    } catch (err: any) {
+      setDeleteError(err?.response?.data?.message ?? err?.message ?? "Failed to delete listing.");
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -176,6 +193,13 @@ export default function MyListings() {
           <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {deleteError && (
+          <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 mb-6">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{deleteError}</span>
           </div>
         )}
 
@@ -268,11 +292,44 @@ export default function MyListings() {
                     )}
                   </div>
 
-                  <div className="mt-3">
+                  <div className="mt-3 flex items-center justify-between">
                     <span className="flex items-center gap-0.5 text-base font-bold text-gray-900">
                       <DollarSign className="h-4 w-4 text-gray-400" />
                       {listing.price > 0 ? listing.price.toLocaleString() : "—"}
                     </span>
+
+                    <div className="pointer-events-auto">
+                      {confirmDeleteId === listing.id ? (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={deletingId === listing.id}
+                            onClick={() => handleDelete(listing.id)}
+                            className="flex items-center gap-1 rounded-lg bg-red-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                          >
+                            {deletingId === listing.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                            Confirm
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletingId === listing.id}
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="rounded-lg px-2.5 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(listing.id)}
+                          className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
