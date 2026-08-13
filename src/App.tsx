@@ -12,6 +12,7 @@ import ComingSoon from "./pages/ComingSoon";
 import TradeInValue from "./pages/TradeInValue";
 import SellingTips from "./pages/SellingTips";
 import ContactUs from "./pages/ContactUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/trade-in" element={<TradeInValue />} />
           <Route path="/selling-tips" element={<SellingTips />} />
           <Route path="/contact-us" element={<ContactUs />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         </Route>
       </Routes>
     </Router>

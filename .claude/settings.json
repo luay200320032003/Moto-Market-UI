@@ -7,7 +7,11 @@
       "Bash(taskkill //PID 36872 //F)",
       "PowerShell(Get-Process -Name node -ErrorAction SilentlyContinue)",
       "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
-      "PowerShell(npx tsc --noEmit -p . 2>&1)"
+      "PowerShell(npx tsc --noEmit -p . 2>&1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:5173/privacy-policy\")",
+      "Bash(taskkill //PID 24916 //F)",
+      "Bash(curl -s \"http://localhost:5173/\")",
+      "Bash(taskkill //PID 22864 //F)"
     ]
   }
 }
