@@ -5,7 +5,7 @@
       "/images/*.{png,jpg,gif,svg}",
       "/css/*",
       "/js/*",
-      "/*.{css,scss,js,json,ico,woff,woff2,ttf}"
+      "/*.{css,scss,js,json,ico,woff,woff2,ttf,txt}"
     ]
   }
 }
