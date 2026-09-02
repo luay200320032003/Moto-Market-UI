@@ -32,7 +32,7 @@ export default function Browse() {
   const [hasNextPage, setHasNextPage] = useState(false);
 
   // Filter states — seed the keyword from a homepage search redirect (?search=...)
-  const [searchQuery, setSearchQuery] = useState(
+  const [searchQuery,  setSearchQuery] = useState(
     () => new URLSearchParams(location.search).get("search") ?? ""
   );
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
