@@ -13,6 +13,8 @@ import TradeInValue from "./pages/TradeInValue";
 import SellingTips from "./pages/SellingTips";
 import ContactUs from "./pages/ContactUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import AboutUs from "./pages/AboutUs";
+import TermsOfService from "./pages/TermsOfService";
 
 function App() {
   return (
@@ -32,6 +34,8 @@ function App() {
           <Route path="/selling-tips" element={<SellingTips />} />
           <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
         </Route>
       </Routes>
     </Router>

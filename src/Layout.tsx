@@ -25,6 +25,10 @@ interface UserType {
 
 type LoginAccountType = "individual" | "dealer";
 
+// Financing/Insurance/Inspections/Shipping aren't launched yet — keep the menu
+// built and ready, just hidden from the live site until it's time to ship it.
+const SHOW_SERVICES_MENU = false;
+
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -246,35 +250,44 @@ const isActive = (pageName: string): boolean => {
                 </Link>
               )}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="text-gray-700 hover:text-red-600 hover:bg-gray-50">
-                    Services
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem asChild>
-                    <Link to="/coming-soon?feature=Financing" className="flex items-center w-full">
-                      💰 Financing
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/coming-soon?feature=Insurance" className="flex items-center w-full">
-                      🛡️ Insurance
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/coming-soon?feature=Inspections" className="flex items-center w-full">
-                      🔧 Inspections
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/coming-soon?feature=Shipping" className="flex items-center w-full">
-                      🚚 Shipping
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Link
+                to="/about-us"
+                className="text-gray-700 hover:text-red-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors font-medium"
+              >
+                About Us
+              </Link>
+
+              {SHOW_SERVICES_MENU && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="text-gray-700 hover:text-red-600 hover:bg-gray-50">
+                      Services
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem asChild>
+                      <Link to="/coming-soon?feature=Financing" className="flex items-center w-full">
+                        💰 Financing
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/coming-soon?feature=Insurance" className="flex items-center w-full">
+                        🛡️ Insurance
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/coming-soon?feature=Inspections" className="flex items-center w-full">
+                        🔧 Inspections
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/coming-soon?feature=Shipping" className="flex items-center w-full">
+                        🚚 Shipping
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </nav>
 
             {/* Desktop Action Buttons */}
@@ -372,18 +385,34 @@ const isActive = (pageName: string): boolean => {
               <div className="border-t border-gray-200 my-2"></div>
 
               <div className="px-3 py-2 text-gray-600">
-                <div className="text-sm font-medium mb-2">Services</div>
+                <div className="text-sm font-medium mb-2">Resources</div>
                 <div className="space-y-1 text-sm">
                   <Link to="/trade-in" className="block py-1" onClick={() => setMobileMenuOpen(false)}>📊 Get Trade-In Value</Link>
                   <Link to="/selling-tips" className="block py-1" onClick={() => setMobileMenuOpen(false)}>📋 Selling Tips</Link>
-                  <Link to="/coming-soon?feature=Financing" className="block py-1" onClick={() => setMobileMenuOpen(false)}>💰 Financing</Link>
-                  <Link to="/coming-soon?feature=Insurance" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🛡️ Insurance</Link>
-                  <Link to="/coming-soon?feature=Inspections" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🔧 Inspections</Link>
-                  <Link to="/coming-soon?feature=Shipping" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🚚 Shipping</Link>
                 </div>
               </div>
 
+              {SHOW_SERVICES_MENU && (
+                <div className="px-3 py-2 text-gray-600">
+                  <div className="text-sm font-medium mb-2">Services</div>
+                  <div className="space-y-1 text-sm">
+                    <Link to="/coming-soon?feature=Financing" className="block py-1" onClick={() => setMobileMenuOpen(false)}>💰 Financing</Link>
+                    <Link to="/coming-soon?feature=Insurance" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🛡️ Insurance</Link>
+                    <Link to="/coming-soon?feature=Inspections" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🔧 Inspections</Link>
+                    <Link to="/coming-soon?feature=Shipping" className="block py-1" onClick={() => setMobileMenuOpen(false)}>🚚 Shipping</Link>
+                  </div>
+                </div>
+              )}
+
               <div className="border-t border-gray-200 my-2"></div>
+
+              <Link
+                to="/about-us"
+                className="flex items-center px-3 py-2 rounded-lg text-gray-700"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                ℹ️ About Us
+              </Link>
 
               <Link
                 to="/contact-us"
@@ -407,7 +436,9 @@ const isActive = (pageName: string): boolean => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
           <span>&copy; {new Date().getFullYear()} Moto Markets. All rights reserved.</span>
           <div className="flex items-center gap-5">
+            <Link to="/about-us" className="hover:text-gray-700 transition-colors">About Us</Link>
             <Link to="/privacy-policy" className="hover:text-gray-700 transition-colors">Privacy Policy</Link>
+            <Link to="/terms-of-service" className="hover:text-gray-700 transition-colors">Terms of Service</Link>
             <Link to="/contact-us" className="hover:text-gray-700 transition-colors">Contact Us</Link>
           </div>
         </div>
