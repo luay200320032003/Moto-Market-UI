@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -55,6 +56,15 @@ export default function HeroSection({ searchQuery, setSearchQuery, onSearch, onK
               Search
             </Button>
           </div>
+          <p className="mt-4 text-sm text-gray-300">
+            Not sure what you're after?{" "}
+            <Link
+              to="/ask-ai"
+              className="font-semibold text-red-400 hover:text-red-300 underline underline-offset-2"
+            >
+              Ask the AI assistant instead
+            </Link>
+          </p>
         </div>
 
         {/* Quick Stats */}

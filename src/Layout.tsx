@@ -86,7 +86,7 @@ const isActive = (pageName: string): boolean => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-10">
             <div className="flex items-center space-x-6">
-              <span>🏍️ Find Your Perfect Ride</span>
+              <Link to="/ask-ai" className="hover:text-gray-300 transition-colors">🏍️ Ask our AI: Find Your Perfect Ride</Link>
               <Link to="/contact-us" className="hidden md:inline hover:text-gray-300 transition-colors">Contact Us</Link>
             </div>
             <div className="flex items-center space-x-4">

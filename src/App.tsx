@@ -9,6 +9,7 @@ import Sell from "./pages/Sell";
 import MyListings from "./pages/MyListings";
 import Subscribe from "./pages/Subscribe";
 import ComingSoon from "./pages/ComingSoon";
+import AskAi from "./pages/AskAi";
 import TradeInValue from "./pages/TradeInValue";
 import SellingTips from "./pages/SellingTips";
 import ContactUs from "./pages/ContactUs";
@@ -30,6 +31,7 @@ function App() {
           <Route path="/my-listings" element={<MyListings />} />
           <Route path="/subscribe" element={<Subscribe />} />
           <Route path="/coming-soon" element={<ComingSoon />} />
+          <Route path="/ask-ai" element={<AskAi />} />
           <Route path="/trade-in" element={<TradeInValue />} />
           <Route path="/selling-tips" element={<SellingTips />} />
           <Route path="/contact-us" element={<ContactUs />} />
