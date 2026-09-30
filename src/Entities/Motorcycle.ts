@@ -48,9 +48,20 @@ export interface Motorcycle {
   longitude?: string;
 }
 
-// Example function to fetch motorcycles (replace with real API call as needed)
-export async function listMotorcycles(orderBy: string, limit: number): Promise<Motorcycle[]> {
-  // Replace this with your actual data fetching logic
-  // For now, return an empty array or mock data
-  return [];
+// The backend ignores `limit`/`pageSize` and always returns a fixed page of
+// items, so reaching a larger total means paging through multiple requests.
+export async function listMotorcycles(_orderBy: string, limit: number): Promise<Motorcycle[]> {
+  const { getMotorcycles } = await import("../services/MotorcycleService");
+  const collected: Motorcycle[] = [];
+  let page = 1;
+  const maxPages = 10;
+
+  while (collected.length < limit && page <= maxPages) {
+    const { motorcycles, hasNextPage } = await getMotorcycles({ page, limit });
+    collected.push(...motorcycles);
+    if (!hasNextPage) break;
+    page++;
+  }
+
+  return collected.slice(0, limit);
 }
