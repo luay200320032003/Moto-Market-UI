@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Routes, Route } from "react-router-dom";
 import { StaticRouter } from "react-router";
+import pretty from "pretty";
 
 import Layout from "../src/Layout";
 import Home from "../src/pages/Home";
@@ -99,7 +100,8 @@ async function main() {
         </StaticRouter>
       );
 
-      const html = template.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+      const rawHtml = template.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+      const html = pretty(rawHtml, { ocd: false });
 
       const outDir = route === "/" ? distDir : path.join(distDir, route);
       fs.mkdirSync(outDir, { recursive: true });
