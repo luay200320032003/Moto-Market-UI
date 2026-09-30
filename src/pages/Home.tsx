@@ -8,6 +8,7 @@ import { Input } from "@/Components/ui/input";
 import { motion } from 'framer-motion';
 
 import HeroSection from "../Components/home/HeroSection";
+import SponsoredStrip from "../Components/home/SponsoredStrip";
 import FeaturedMotorcycles from "../Components/home/FeatureMotocycles";
 import RecentListings from "../Components/home/RecentListing";
 import CategoryGrid from "../Components/home/CategoryGrid";
@@ -17,12 +18,19 @@ import BrowseByBrand from "../Components/home/BrowseByBrand";
 import { useNavigate } from "react-router-dom";
  
 
-export default function Home() {
-const navigate = useNavigate();
+interface HomeProps {
+  // Seeds the initial state instead of the loading skeleton — used only by
+  // scripts/prerender.tsx, which fetches real data at build time since the
+  // useEffect below never runs during server-side prerendering.
+  initialMotorcycles?: Motorcycle[];
+}
 
-  const [motorcycles, setMotorcycles] = useState<Motorcycle[]>([]);
+export default function Home({ initialMotorcycles }: HomeProps = {}) {
+  const navigate = useNavigate();
+
+  const [motorcycles, setMotorcycles] = useState<Motorcycle[]>(initialMotorcycles ?? []);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialMotorcycles);
   const [data, setData] = useState<Motorcycle[]>([]);
   useEffect(() => {
     loadMotorcycles();
@@ -30,7 +38,7 @@ const navigate = useNavigate();
 
   const loadMotorcycles = async () => {
     try {
-      const data = await listMotorcycles("-created_date", 50);
+      const data = await listMotorcycles("-created_date", 100);
       setMotorcycles(data);
     } catch (error) {
       console.error("Error loading motorcycles:", error);
@@ -69,6 +77,8 @@ const navigate = useNavigate();
         onSearch={handleSearch}
         onKeyPress={handleKeyPress}
       />
+
+      <SponsoredStrip motorcycles={motorcycles} isLoading={isLoading} />
 
       <StatsSection motorcyclesCount={motorcycles.length} />
 

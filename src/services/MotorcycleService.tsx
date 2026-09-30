@@ -19,7 +19,7 @@ interface GetMotorcyclesParams {
 
 const FALLBACK_IMAGE = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
 
-function mapToMotorcycle(m: any): Motorcycle {
+export function mapToMotorcycle(m: any): Motorcycle {
   // build, media, dealer all come as single-element arrays from the API
   const build  = Array.isArray(m.build)  ? m.build[0]  : m.build  ?? {};
   const media  = Array.isArray(m.media)  ? m.media[0]  : m.media  ?? {};
