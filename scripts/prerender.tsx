@@ -31,12 +31,31 @@ import ContactUs from "../src/pages/ContactUs";
 import SellingTips from "../src/pages/SellingTips";
 import { mapToMotorcycle } from "../src/services/MotorcycleService";
 import type { Motorcycle } from "../src/Entities/Motorcycle";
+import {
+  injectSeo,
+  HOME_SEO,
+  ABOUT_US_SEO,
+  PRIVACY_POLICY_SEO,
+  TERMS_OF_SERVICE_SEO,
+  CONTACT_US_SEO,
+  SELLING_TIPS_SEO,
+  type PageSeo,
+} from "../src/seo";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.resolve(__dirname, "../dist");
 const templatePath = path.join(distDir, "index.html");
 
-const ROUTES = ["/", "/about-us", "/privacy-policy", "/terms-of-service", "/contact-us", "/selling-tips"];
+const ROUTE_SEO: Record<string, PageSeo> = {
+  "/": HOME_SEO,
+  "/about-us": ABOUT_US_SEO,
+  "/privacy-policy": PRIVACY_POLICY_SEO,
+  "/terms-of-service": TERMS_OF_SERVICE_SEO,
+  "/contact-us": CONTACT_US_SEO,
+  "/selling-tips": SELLING_TIPS_SEO,
+};
+
+const ROUTES = Object.keys(ROUTE_SEO);
 
 // Home's motorcycle sections (sponsored strip, featured, recent) fetch data
 // in a useEffect, which never runs during server-side prerendering — so
@@ -100,7 +119,8 @@ async function main() {
         </StaticRouter>
       );
 
-      const rawHtml = template.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+      const templateWithSeo = injectSeo(template, ROUTE_SEO[route]);
+      const rawHtml = templateWithSeo.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
       const html = pretty(rawHtml, { ocd: false });
 
       const outDir = route === "/" ? distDir : path.join(distDir, route);

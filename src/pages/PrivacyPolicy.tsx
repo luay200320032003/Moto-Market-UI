@@ -1,4 +1,8 @@
+import useSeo from "../hooks/useSeo";
+import { PRIVACY_POLICY_SEO } from "../seo";
+
 export default function PrivacyPolicy() {
+  useSeo(PRIVACY_POLICY_SEO);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
