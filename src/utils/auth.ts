@@ -80,7 +80,11 @@ export function isListingsBlocked(user: AuthUser | null): boolean {
 }
 
 export function getStoredToken(): string | null {
-  return sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  try {
+    return sessionStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function storeToken(token: string): void {

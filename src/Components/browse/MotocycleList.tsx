@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "../../utils";
+import { motorcyclePath } from "../../seo";
 import { MapPin, Gauge, Calendar, Heart, Phone, Mail } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -22,6 +22,7 @@ type Motorcycle = {
   seller_name?: string;
   contact_phone?: string;
   contact_email?: string;
+  source?: string;
 };
 
 interface MotorcycleListProps {
@@ -70,7 +71,7 @@ export default function MotorcycleList({ motorcycles, isLoading }: MotorcycleLis
         <div key={`${bike.id}-${index}`} className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow group">
           <div className="md:flex">
             <div className="md:w-1/3 relative">
-              <Link to={createPageUrl(`Motorcycle?id=${bike.id}`)}>
+              <Link to={motorcyclePath(bike.id, bike.source === "listing")}>
                 <div className="h-48 md:h-full overflow-hidden">
                   <img
                     src={bike.image_urls?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400"}
@@ -104,7 +105,7 @@ export default function MotorcycleList({ motorcycles, isLoading }: MotorcycleLis
             <div className="p-6 md:w-2/3 flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-2">
-                  <Link to={createPageUrl(`Motorcycle?id=${bike.id}`)}>
+                  <Link to={motorcyclePath(bike.id, bike.source === "listing")}>
                     <h3 className="text-xl font-bold text-gray-900 hover:text-red-600 transition-colors">
                       {bike.year} {bike.make} {bike.model}
                     </h3>
@@ -157,7 +158,7 @@ export default function MotorcycleList({ motorcycles, isLoading }: MotorcycleLis
                       Email
                     </Button>
                   )}
-                  <Link to={createPageUrl(`Motorcycle?id=${bike.id}`)}>
+                  <Link to={motorcyclePath(bike.id, bike.source === "listing")}>
                     <Button size="sm" className="bg-red-600 hover:bg-red-700">
                       View Details
                     </Button>

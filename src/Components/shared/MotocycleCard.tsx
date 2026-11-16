@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { motorcyclePath } from '../../seo';
 import { MapPin, Gauge, Calendar, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -41,7 +41,7 @@ export default function MotorcycleCard({ motorcycle, index }: MotorcycleCardProp
   if (!motorcycle) return null;
 
   const isListing = motorcycle.source === "listing";
-  const detailUrl = createPageUrl(`Motorcycle?id=${motorcycle.id}${isListing ? "&type=listing" : ""}`);
+  const detailUrl = motorcyclePath(motorcycle.id, isListing);
   const photos = motorcycle.image_urls?.length ? motorcycle.image_urls : [FALLBACK];
   const hasMultiple = photos.length > 1;
 

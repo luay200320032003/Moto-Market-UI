@@ -15,7 +15,7 @@ export interface PageSeo {
 }
 
 export const HOME_SEO: PageSeo = {
-  title: `${SITE_NAME} — Buy & Sell Motorcycles Online`,
+  title: `Motorcycles for Sale – Buy & Sell New and Used Bikes | ${SITE_NAME}`,
   description:
     "Browse thousands of motorcycles for sale from trusted dealers and private sellers. Compare prices, explore listings, and find your perfect ride on Motos Marketplace.",
   canonicalPath: "/",
@@ -64,6 +64,14 @@ export const LISTING_FALLBACK_SEO: PageSeo = {
   canonicalPath: "/Motorcycle",
 };
 
+// Path-based listing URL — one real static file per listing (see
+// scripts/prerender.tsx), so each gets genuinely unique HTML instead of all
+// listings sharing the single query-string-routed /Motorcycle page, which
+// Azure Static Web Apps can't vary by query string.
+export function motorcyclePath(id: string | number, isUserListing?: boolean): string {
+  return `/Motorcycle/${isUserListing ? "listing" : "market"}/${id}`;
+}
+
 // Matches the "{Year} {Make} {Model} for Sale – ${Price} | Motos Marketplace"
 // pattern. id/isUserListing determine the canonical path, matching the
 // market-vs-listing route split used throughout the app.
@@ -73,17 +81,21 @@ export function listingSeo(params: {
   make?: string;
   model?: string;
   price?: number;
+  mileage?: number;
+  location?: string;
   isUserListing?: boolean;
   image?: string;
 }): PageSeo {
-  const { id, year, make, model, price, isUserListing, image } = params;
+  const { id, year, make, model, price, mileage, location, isUserListing, image } = params;
   const subject = [year, make, model].filter(Boolean).join(" ") || "Motorcycle";
   const priceText = price != null && price > 0 ? `$${Number(price).toLocaleString()}` : "Inquire for Price";
+  const mileageText = mileage != null && mileage > 0 ? `${Number(mileage).toLocaleString()} miles` : "low mileage";
+  const locationText = location ? ` in ${location}` : "";
 
   return {
     title: `${subject} for Sale – ${priceText} | ${SITE_NAME}`,
-    description: `${subject} for sale on ${SITE_NAME} for ${priceText}. View photos, specs, and contact the seller.`,
-    canonicalPath: `/Motorcycle?id=${id}${isUserListing ? "&type=listing" : ""}`,
+    description: `${subject} for sale${locationText} for ${priceText} with ${mileageText} — view photos, specs, and contact the seller on ${SITE_NAME}.`,
+    canonicalPath: motorcyclePath(id, isUserListing),
     image,
   };
 }

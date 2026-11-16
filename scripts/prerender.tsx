@@ -24,6 +24,8 @@ import pretty from "pretty";
 
 import Layout from "../src/Layout";
 import Home from "../src/pages/Home";
+import Browse from "../src/pages/Browse";
+import MotocyclePage from "../src/pages/Motocycle";
 import AboutUs from "../src/pages/AboutUs";
 import PrivacyPolicy from "../src/pages/PrivacyPolicy";
 import TermsOfService from "../src/pages/TermsOfService";
@@ -33,7 +35,10 @@ import { mapToMotorcycle } from "../src/services/MotorcycleService";
 import type { Motorcycle } from "../src/Entities/Motorcycle";
 import {
   injectSeo,
+  listingSeo,
+  motorcyclePath,
   HOME_SEO,
+  BROWSE_SEO,
   ABOUT_US_SEO,
   PRIVACY_POLICY_SEO,
   TERMS_OF_SERVICE_SEO,
@@ -48,6 +53,7 @@ const templatePath = path.join(distDir, "index.html");
 
 const ROUTE_SEO: Record<string, PageSeo> = {
   "/": HOME_SEO,
+  "/Browse": BROWSE_SEO,
   "/about-us": ABOUT_US_SEO,
   "/privacy-policy": PRIVACY_POLICY_SEO,
   "/terms-of-service": TERMS_OF_SERVICE_SEO,
@@ -57,33 +63,37 @@ const ROUTE_SEO: Record<string, PageSeo> = {
 
 const ROUTES = Object.keys(ROUTE_SEO);
 
-// Home's motorcycle sections (sponsored strip, featured, recent) fetch data
-// in a useEffect, which never runs during server-side prerendering — so
-// without this, the baked-in HTML would only show loading skeletons. Uses a
-// plain fetch (not the app's axios instance) because that instance's request
-// interceptor reads sessionStorage, which doesn't exist under Node.
-// The backend ignores `limit` and always returns a fixed page of items, so
-// reaching a useful total means paging through multiple requests.
-async function fetchHomeMotorcycles(): Promise<Motorcycle[]> {
-  const target = 100;
-  const maxPages = 10;
+// The backend ignores `limit`/`pageSize` and always returns a fixed page of
+// items, so reaching the full list means paging through until hasNextPage
+// is false. Fetched once and reused both to seed Home's motorcycle sections
+// and to prerender one real static page per listing below — a single crawl
+// instead of fetching the catalog twice.
+async function fetchAllListings(): Promise<Motorcycle[]> {
+  const maxPages = 1000; // safety net — fixed page size of 12 covers up to 12,000 listings
   const apiBase = import.meta.env.VITE_API_BASE;
   const collected: Motorcycle[] = [];
 
   try {
-    for (let page = 1; page <= maxPages && collected.length < target; page++) {
-      const res = await fetch(`${apiBase}/api/marketplace?page=${page}&limit=${target}`);
-      if (!res.ok) throw new Error(`Marketplace API responded ${res.status}`);
+    for (let page = 1; page <= maxPages; page++) {
+      const res = await fetch(`${apiBase}/api/marketplace?page=${page}`);
+      if (!res.ok) throw new Error(`Marketplace API responded ${res.status} on page ${page}`);
       const data = await res.json();
       const items: any[] = Array.isArray(data?.items) ? data.items : [];
       collected.push(...items.map(mapToMotorcycle));
       if (!data?.hasNextPage || items.length === 0) break;
     }
-    return collected;
   } catch (err) {
-    console.error("✗ Failed to fetch motorcycles for prerendering, falling back to what was collected so far:", err);
-    return collected;
+    console.error("✗ Failed to fetch listings for prerendering, continuing with what was collected so far:", err);
   }
+
+  return collected;
+}
+
+// "Similar" bikes just means "the next few in the catalog, excluding this
+// one" — matching what the live page already does (it fetches page 1 with
+// limit 4 and filters the current bike out), not a real similarity match.
+function pickSimilar(all: Motorcycle[], current: Motorcycle, count: number): Motorcycle[] {
+  return all.filter((m) => m.id !== current.id).slice(0, count);
 }
 
 function PrerenderRoutes({ homeMotorcycles }: { homeMotorcycles: Motorcycle[] }) {
@@ -91,6 +101,7 @@ function PrerenderRoutes({ homeMotorcycles }: { homeMotorcycles: Motorcycle[] })
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home initialMotorcycles={homeMotorcycles} />} />
+        <Route path="/Browse" element={<Browse />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/terms-of-service" element={<TermsOfService />} />
@@ -101,6 +112,21 @@ function PrerenderRoutes({ homeMotorcycles }: { homeMotorcycles: Motorcycle[] })
   );
 }
 
+function renderListingPage(bike: Motorcycle, similar: Motorcycle[], routePath: string) {
+  return renderToStaticMarkup(
+    <StaticRouter location={routePath}>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route
+            path="/Motorcycle/:type/:id"
+            element={<MotocyclePage initialMotorcycle={bike} initialSimilar={similar} />}
+          />
+        </Route>
+      </Routes>
+    </StaticRouter>
+  );
+}
+
 async function main() {
   if (!fs.existsSync(templatePath)) {
     console.error(`✗ ${templatePath} not found — run "vite build" before prerendering.`);
@@ -108,7 +134,8 @@ async function main() {
   }
 
   const template = fs.readFileSync(templatePath, "utf-8");
-  const homeMotorcycles = await fetchHomeMotorcycles();
+  const allListings = await fetchAllListings();
+  const homeMotorcycles = allListings.slice(0, 100);
   let failures = 0;
 
   for (const route of ROUTES) {
@@ -133,7 +160,42 @@ async function main() {
     }
   }
 
-  if (failures > 0) {
+  // One real static file per listing, so each gets genuinely unique SEO tags
+  // and content in the HTML crawlers receive — not pretty-printed (unlike
+  // the static pages above), since that's a per-file formatting cost not
+  // worth paying thousands of times over for machine-generated pages.
+  let listingFailures = 0;
+  for (const bike of allListings) {
+    try {
+      const isUserListing = bike.source === "listing";
+      const routePath = motorcyclePath(bike.id, isUserListing);
+      const seo = listingSeo({
+        id: bike.id,
+        year: bike.year,
+        make: bike.make,
+        model: bike.model,
+        price: bike.price,
+        mileage: bike.mileage,
+        location: bike.location,
+        isUserListing,
+        image: bike.image_urls?.[0],
+      });
+
+      const appHtml = renderListingPage(bike, pickSimilar(allListings, bike, 4), routePath);
+      const templateWithSeo = injectSeo(template, seo);
+      const html = templateWithSeo.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
+
+      const outDir = path.join(distDir, routePath);
+      fs.mkdirSync(outDir, { recursive: true });
+      fs.writeFileSync(path.join(outDir, "index.html"), html, "utf-8");
+    } catch (err) {
+      listingFailures++;
+      console.error(`✗ Failed to prerender listing ${bike.id}:`, err);
+    }
+  }
+  console.log(`✓ Prerendered ${allListings.length - listingFailures}/${allListings.length} listing pages`);
+
+  if (failures > 0 || listingFailures > 0) {
     process.exit(1);
   }
 }

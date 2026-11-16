@@ -1,16 +1,24 @@
 ﻿import { useEffect, useState } from "react";
-import { useSearchParams, useLocation, Link } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ShieldCheck, Loader2, AlertCircle, Sparkles, CheckCircle2 } from "lucide-react";
 import { Motorcycle } from "../Entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
 import { getStoredToken, getStoredUser, isInGracePeriod, graceDaysLeft, isListingsBlocked, isTrialActive, trialDaysLeft } from "../utils/auth";
 import API from "../api";
 import useSeo from "../hooks/useSeo";
-import { listingSeo, LISTING_FALLBACK_SEO } from "../seo";
+import { listingSeo, motorcyclePath, LISTING_FALLBACK_SEO } from "../seo";
 
 const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
 
-export default function Motocycle() {
+interface MotocycleProps {
+  // Seeds the initial state instead of the loading skeleton — used only by
+  // scripts/prerender.tsx, which fetches real data at build time since the
+  // useEffect below never runs during server-side prerendering.
+  initialMotorcycle?: Motorcycle;
+  initialSimilar?: Motorcycle[];
+}
+
+export default function Motocycle({ initialMotorcycle, initialSimilar }: MotocycleProps = {}) {
   const authUser     = getStoredUser();
   const isSubscribed = !!authUser?.hasActiveSubscription;
 
@@ -20,10 +28,10 @@ export default function Motocycle() {
   const onTrial   = !isSubscribed && isTrialActive(authUser);
   const trialLeft = trialDaysLeft(authUser);
 
-  const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [motorcycle, setMotorcycle] = useState<Motorcycle | null>(initialMotorcycle ?? null);
+  const [isLoading, setIsLoading] = useState(!initialMotorcycle);
   const [error, setError] = useState<string | null>(null);
-  const [similar, setSimilar] = useState<Motorcycle[]>([]);
+  const [similar, setSimilar] = useState<Motorcycle[]>(initialSimilar ?? []);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [fading, setFading] = useState(false);
   const [vinData, setVinData] = useState<any>(null);
@@ -36,11 +44,25 @@ export default function Motocycle() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
 
+  // New canonical route is /Motorcycle/:type/:id (one real static file per
+  // listing — see scripts/prerender.tsx). The old ?id=&type= query-string
+  // form still works for anyone with a bookmarked/shared link: it's picked
+  // up below and redirected client-side to the canonical path.
+  const params = useParams<{ type?: string; id?: string }>();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const location = useLocation();
-  const motorcycleId = searchParams.get("id");
-  const isListing = searchParams.get("type") === "listing";
+  const legacyId = searchParams.get("id");
+  const legacyIsListing = searchParams.get("type") === "listing";
+  const motorcycleId = params.id ?? legacyId;
+  const isListing = params.id ? params.type === "listing" : legacyIsListing;
   const isOwnListing = isListing && authUser?.id != null && motorcycle?.seller_user_id === authUser.id;
+
+  useEffect(() => {
+    if (!params.id && legacyId) {
+      navigate(motorcyclePath(legacyId, legacyIsListing), { replace: true });
+    }
+  }, [params.id, legacyId, legacyIsListing, navigate]);
 
   useSeo(
     motorcycle && motorcycleId
@@ -50,6 +72,8 @@ export default function Motocycle() {
           make: motorcycle.make,
           model: motorcycle.model,
           price: motorcycle.price,
+          mileage: motorcycle.mileage,
+          location: motorcycle.location,
           isUserListing: isListing,
           image: motorcycle.image_urls?.[0],
         })
@@ -277,7 +301,7 @@ export default function Motocycle() {
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
                       <span className="font-mono font-medium text-gray-800 tracking-wider">
-                        {motorcycle.vin.slice(0, 8)}{"*".repeat(motorcycle.vin.length - 8)}
+                        {motorcycle.vin.slice(0, 8)}{"*".repeat(Math.max(0, motorcycle.vin.length - 8))}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -608,7 +632,7 @@ export default function Motocycle() {
             {similar.map((bike) => (
               <Link
                 key={bike.id}
-                to={`/Motorcycle?id=${bike.id}`}
+                to={motorcyclePath(bike.id, bike.source === "listing")}
                 className="block bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden border border-gray-100"
               >
                 <img

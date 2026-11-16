@@ -4,6 +4,7 @@ import { PlusCircle, Bike, MapPin, Calendar, DollarSign, AlertCircle, Clock, Loc
 import { Button } from "../Components/ui/button";
 import { getStoredToken, getStoredUser, isInGracePeriod, graceDaysLeft, isListingsBlocked, isTrialActive, trialDaysLeft } from "../utils/auth";
 import API from "../api";
+import { motorcyclePath } from "../seo";
 
 interface MyListing {
   id: string | number;
@@ -243,7 +244,7 @@ export default function MyListings() {
             {listings.map((listing) => (
               <div key={listing.id} className={`rounded-2xl bg-white shadow-sm overflow-hidden border transition-shadow ${blocked ? "border-gray-200 opacity-60 grayscale pointer-events-none" : "border-gray-100 hover:shadow-md"}`}>
                 {/* Photo — clickable (disabled when blocked) */}
-                <Link to={blocked ? "#" : `/Motorcycle?id=${listing.id}&type=listing`} className="block relative h-44 bg-gray-100">
+                <Link to={blocked ? "#" : motorcyclePath(listing.id, true)} className="block relative h-44 bg-gray-100">
                   <img
                     src={listing.imageUrls?.[0] ?? FALLBACK}
                     alt={listing.title}

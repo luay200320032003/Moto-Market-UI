@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { createPageUrl } from "../../utils";
+import { motorcyclePath } from "../../seo";
 import type { Motorcycle } from "../../Entities/Motorcycle";
 
 const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
@@ -78,7 +79,7 @@ export default function SponsoredStrip({ motorcycles, isLoading }: SponsoredStri
               }
 
               const isListing = bike.source === "listing";
-              const detailUrl = createPageUrl(`Motorcycle?id=${bike.id}${isListing ? "&type=listing" : ""}`);
+              const detailUrl = motorcyclePath(bike.id, isListing);
               const photo = bike.image_urls?.[0] || bike.image || FALLBACK;
 
               return (
