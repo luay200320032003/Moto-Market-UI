@@ -5,6 +5,8 @@ import { Motorcycle } from "../Entities/Motorcycle";
 import { getMotorcycleById, getMotorcycles } from "../services/MotorcycleService";
 import { getStoredToken, getStoredUser, isInGracePeriod, graceDaysLeft, isListingsBlocked, isTrialActive, trialDaysLeft } from "../utils/auth";
 import API from "../api";
+import useSeo from "../hooks/useSeo";
+import { listingSeo, LISTING_FALLBACK_SEO } from "../seo";
 
 const FALLBACK = "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400";
 
@@ -39,6 +41,20 @@ export default function Motocycle() {
   const motorcycleId = searchParams.get("id");
   const isListing = searchParams.get("type") === "listing";
   const isOwnListing = isListing && authUser?.id != null && motorcycle?.seller_user_id === authUser.id;
+
+  useSeo(
+    motorcycle && motorcycleId
+      ? listingSeo({
+          id: motorcycleId,
+          year: motorcycle.year,
+          make: motorcycle.make,
+          model: motorcycle.model,
+          price: motorcycle.price,
+          isUserListing: isListing,
+          image: motorcycle.image_urls?.[0],
+        })
+      : LISTING_FALLBACK_SEO
+  );
 
   useEffect(() => {
     if (!motorcycleId) {

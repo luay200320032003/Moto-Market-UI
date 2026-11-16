@@ -1,4 +1,8 @@
+import useSeo from "../hooks/useSeo";
+import { TERMS_OF_SERVICE_SEO } from "../seo";
+
 export default function TermsOfService() {
+  useSeo(TERMS_OF_SERVICE_SEO);
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">

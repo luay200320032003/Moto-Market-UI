@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { ShieldCheck, Sparkles, Users, MapPin, ArrowRight } from "lucide-react";
+import useSeo from "../hooks/useSeo";
+import { ABOUT_US_SEO } from "../seo";
 
 const VALUES = [
   {
@@ -20,6 +22,7 @@ const VALUES = [
 ];
 
 export default function AboutUs() {
+  useSeo(ABOUT_US_SEO);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}

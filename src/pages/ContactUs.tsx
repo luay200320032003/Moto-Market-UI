@@ -1,4 +1,6 @@
 import { Mail, Phone, MapPin, Clock, HelpCircle, MessageCircle, ChevronDown, LucideIcon } from "lucide-react";
+import useSeo from "../hooks/useSeo";
+import { CONTACT_US_SEO } from "../seo";
 
 type ContactMethod = {
   icon: LucideIcon;
@@ -67,6 +69,7 @@ const CONTACT_METHODS: ContactMethod[] = [
 ];
 
 export default function ContactUs() {
+  useSeo(CONTACT_US_SEO);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}

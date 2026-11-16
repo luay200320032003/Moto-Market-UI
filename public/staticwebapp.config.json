@@ -5,7 +5,13 @@
       "/images/*.{png,jpg,gif,svg}",
       "/css/*",
       "/js/*",
-      "/*.{css,scss,js,json,ico,woff,woff2,ttf,txt}"
+      "/*.{css,scss,js,json,ico,woff,woff2,ttf,txt,xml}",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/sitemap-*.xml"
     ]
+  },
+  "mimeTypes": {
+    ".xml": "application/xml"
   }
 }

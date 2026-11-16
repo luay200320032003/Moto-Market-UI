@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { DollarSign, Camera, PenLine, MessageSquare, ShieldCheck, Users, ArrowRight, Lightbulb, LucideIcon } from "lucide-react";
+import useSeo from "../hooks/useSeo";
+import { SELLING_TIPS_SEO } from "../seo";
 
 type Tip = {
   icon: LucideIcon;
@@ -43,6 +45,7 @@ const TIPS: Tip[] = [
 ];
 
 export default function SellingTips() {
+  useSeo(SELLING_TIPS_SEO);
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}

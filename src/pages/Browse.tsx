@@ -16,9 +16,12 @@ import SearchFilters from "../Components/browse/SearchFilter";
 import MotorcycleGrid from "../Components/browse/MotocycleGrid";
 import MotorcycleList from "../Components/browse/MotocycleList";
 import { getMotorcycles } from "../services/MotorcycleService";
+import useSeo from "../hooks/useSeo";
+import { BROWSE_SEO } from "../seo";
 
 export default function Browse() {
   const location = useLocation();
+  useSeo(BROWSE_SEO);
   const isLoggedIn = Boolean(getStoredToken());
 
   const PAGE_SIZE = 12;

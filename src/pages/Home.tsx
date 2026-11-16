@@ -16,7 +16,8 @@ import StatsSection from "../Components/home/StateSection";
 import WhyChooseUs from "../Components/home/WhyChooseUs";
 import BrowseByBrand from "../Components/home/BrowseByBrand";
 import { useNavigate } from "react-router-dom";
- 
+import useSeo from "../hooks/useSeo";
+import { HOME_SEO } from "../seo";
 
 interface HomeProps {
   // Seeds the initial state instead of the loading skeleton — used only by
@@ -27,6 +28,7 @@ interface HomeProps {
 
 export default function Home({ initialMotorcycles }: HomeProps = {}) {
   const navigate = useNavigate();
+  useSeo(HOME_SEO);
 
   const [motorcycles, setMotorcycles] = useState<Motorcycle[]>(initialMotorcycles ?? []);
   const [searchQuery, setSearchQuery] = useState("");
