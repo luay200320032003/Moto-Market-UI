@@ -24,6 +24,7 @@ function App() {
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="Browse" element={<Browse />} />
+          <Route path="/Motorcycle/:type/:id" element={<Motorcycle />} />
           <Route path="/Motorcycle" element={<Motorcycle />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

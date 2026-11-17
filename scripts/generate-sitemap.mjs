@@ -63,7 +63,7 @@ async function fetchAllListings(apiBase) {
 
 function listingToUrlEntry(item) {
   const isUserListing = item.source === "listing";
-  const loc = isUserListing ? `/Motorcycle?id=${item.id}&type=listing` : `/Motorcycle?id=${item.id}`;
+  const loc = `/Motorcycle/${isUserListing ? "listing" : "market"}/${item.id}`;
   const lastmod = item.lastSeenAtDate ?? item.firstSeenAtDate ?? undefined;
   return { loc, lastmod };
 }

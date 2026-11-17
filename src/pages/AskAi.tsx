@@ -2,18 +2,18 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Search, Loader2, AlertCircle, ExternalLink, Tag, Calendar, ArrowRight, Bot, Bike } from "lucide-react";
-import { createPageUrl } from "../utils";
 import { askAi, AskAiResult } from "../services/AskAiService";
+import { motorcyclePath } from "../seo";
 
 // The search index's contentType vocabulary is the OPPOSITE of the rest of
 // the app's `source` field: "listing" here means MarketCheck/dealer data,
 // "userListing" means an actual user-created listing (dbo.Listings).
 function resultLink(result: AskAiResult): { to: string; external: boolean } | null {
   if (result.contentType === "listing" && result.listingId != null) {
-    return { to: createPageUrl(`Motorcycle?id=${result.listingId}`), external: false };
+    return { to: motorcyclePath(result.listingId, false), external: false };
   }
   if (result.contentType === "userListing" && result.listingId != null) {
-    return { to: createPageUrl(`Motorcycle?id=${result.listingId}&type=listing`), external: false };
+    return { to: motorcyclePath(result.listingId, true), external: false };
   }
   if (result.url) {
     return { to: result.url, external: /^https?:\/\//i.test(result.url) };
