@@ -63,6 +63,20 @@ const ROUTE_SEO: Record<string, PageSeo> = {
 
 const ROUTES = Object.keys(ROUTE_SEO);
 
+// Azure Static Web Apps' content-distribution step fails once a deploy has
+// too many files — prerendering every listing (7,377 pages, ~195 MB,
+// ~7,430 files total) produced "Failure during content distribution" even
+// though the build itself succeeded. Capping to the newest N keeps the
+// deploy well under whatever threshold that is, while still giving the
+// freshest inventory genuine static SEO tags. There's no view-count data
+// available to prioritize by popularity instead, so "newest" (by
+// created_date) is the best available proxy. Listings past the cap fall
+// back to the client-side useSeo tags already wired into Motocycle.tsx —
+// correct for Google's JS-rendering crawler, but not for a raw curl or
+// view-source, and the sitemap (scripts/generate-sitemap.mjs) still lists
+// every listing either way since it doesn't depend on this cap.
+const MAX_PRERENDERED_LISTINGS = 1500;
+
 // The backend ignores `limit`/`pageSize` and always returns a fixed page of
 // items, so reaching the full list means paging through until hasNextPage
 // is false. Fetched once and reused both to seed Home's motorcycle sections
@@ -136,6 +150,9 @@ async function main() {
   const template = fs.readFileSync(templatePath, "utf-8");
   const allListings = await fetchAllListings();
   const homeMotorcycles = allListings.slice(0, 100);
+  const listingsToPrerender = [...allListings]
+    .sort((a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime())
+    .slice(0, MAX_PRERENDERED_LISTINGS);
   let failures = 0;
 
   for (const route of ROUTES) {
@@ -165,7 +182,7 @@ async function main() {
   // the static pages above), since that's a per-file formatting cost not
   // worth paying thousands of times over for machine-generated pages.
   let listingFailures = 0;
-  for (const bike of allListings) {
+  for (const bike of listingsToPrerender) {
     try {
       const isUserListing = bike.source === "listing";
       const routePath = motorcyclePath(bike.id, isUserListing);
@@ -193,7 +210,10 @@ async function main() {
       console.error(`✗ Failed to prerender listing ${bike.id}:`, err);
     }
   }
-  console.log(`✓ Prerendered ${allListings.length - listingFailures}/${allListings.length} listing pages`);
+  console.log(
+    `✓ Prerendered ${listingsToPrerender.length - listingFailures}/${listingsToPrerender.length} listing pages ` +
+      `(of ${allListings.length} total listings — capped at ${MAX_PRERENDERED_LISTINGS})`
+  );
 
   if (failures > 0 || listingFailures > 0) {
     process.exit(1);
