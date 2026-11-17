@@ -109,6 +109,15 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+// Replaces a tag matching `pattern` if present, otherwise inserts `tag`
+// right before </head>. The base template (index.html) deliberately has no
+// canonical/og:url tags — it also serves as the generic SPA-fallback shell
+// for non-prerendered routes, so it can't hardcode any one page's URL —
+// which means those two tags must be insertable, not just replaceable.
+function upsertTag(html: string, pattern: RegExp, tag: string): string {
+  return pattern.test(html) ? html.replace(pattern, tag) : html.replace(/<\/head>/, `    ${tag}\n  </head>`);
+}
+
 // Rewrites the head tags in a raw HTML template string to match the given
 // page's metadata. Used only by the prerender script (server-side, no DOM)
 // — the client-side equivalent is the useSeo hook.
@@ -118,15 +127,18 @@ export function injectSeo(template: string, seo: PageSeo): string {
   const title = escapeHtml(seo.title);
   const description = escapeHtml(seo.description);
 
-  return template
+  let html = template
     .replace(/<title>.*?<\/title>/s, `<title>${title}</title>`)
     .replace(/<meta name="description" content=".*?"\s*\/?>/s, `<meta name="description" content="${description}" />`)
-    .replace(/<link rel="canonical" href=".*?"\s*\/?>/s, `<link rel="canonical" href="${canonicalUrl}" />`)
     .replace(/<meta property="og:title" content=".*?"\s*\/?>/s, `<meta property="og:title" content="${title}" />`)
     .replace(
       /<meta property="og:description" content=".*?"\s*\/?>/s,
       `<meta property="og:description" content="${description}" />`
     )
-    .replace(/<meta property="og:url" content=".*?"\s*\/?>/s, `<meta property="og:url" content="${canonicalUrl}" />`)
     .replace(/<meta property="og:image" content=".*?"\s*\/?>/s, `<meta property="og:image" content="${image}" />`);
+
+  html = upsertTag(html, /<link rel="canonical" href=".*?"\s*\/?>/s, `<link rel="canonical" href="${canonicalUrl}" />`);
+  html = upsertTag(html, /<meta property="og:url" content=".*?"\s*\/?>/s, `<meta property="og:url" content="${canonicalUrl}" />`);
+
+  return html;
 }

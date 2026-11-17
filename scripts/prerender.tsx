@@ -167,7 +167,16 @@ async function main() {
       const rawHtml = templateWithSeo.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>`);
       const html = pretty(rawHtml, { ocd: false });
 
-      const outDir = route === "/" ? distDir : path.join(distDir, route);
+      // Home's prerendered output does NOT go to dist/index.html — that file
+      // doubles as the generic SPA-fallback shell (see staticwebapp.config.json,
+      // navigationFallback.rewrite) served to every non-prerendered route, so
+      // it can't hardcode home's canonical/og:url without falsely claiming to
+      // be home on every one of those pages. Instead it's written to
+      // dist/home/index.html, and a routes rule rewrites "/" to serve that
+      // file directly — dist/index.html itself is left untouched by this
+      // loop, exactly as `vite build` produced it from the generic base
+      // index.html template.
+      const outDir = route === "/" ? path.join(distDir, "home") : path.join(distDir, route);
       fs.mkdirSync(outDir, { recursive: true });
       fs.writeFileSync(path.join(outDir, "index.html"), html, "utf-8");
       console.log(`✓ Prerendered ${route}`);
