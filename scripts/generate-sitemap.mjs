@@ -20,13 +20,13 @@ const MAX_URLS_PER_FILE = 50000;
 const MAX_PAGES = 1000; // safety net — backend's fixed page size is 12, so this covers up to 12,000 listings
 
 // Public, indexable pages. Deliberately excludes auth-gated pages
-// (login/register/my-listings) and transactional/utility pages
+// (login/register/my-listings, and /Sell + /subscribe — both redirect any
+// logged-out visitor straight to /login via a useEffect, so a crawler would
+// never see real content there) and transactional/utility pages
 // (coming-soon, ask-ai) that have no SEO value.
 const STATIC_PAGES = [
   "/",
   "/Browse",
-  "/Sell",
-  "/subscribe",
   "/trade-in",
   "/selling-tips",
   "/about-us",
