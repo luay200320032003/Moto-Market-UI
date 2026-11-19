@@ -308,6 +308,7 @@ export default function Motocycle({ initialMotorcycle, initialSimilar }: Motocyc
                       <ShieldCheck className="h-4 w-4 text-green-600 shrink-0" />
                       <Link
                         to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`}
+                        rel="nofollow"
                         className="text-sm text-red-600 hover:underline font-medium"
                       >
                         Click to reveal full VIN (requires login)
@@ -486,7 +487,7 @@ export default function Motocycle({ initialMotorcycle, initialSimilar }: Motocyc
                   >
                     <Sparkles className="h-4 w-4" /> Get AI Offer Suggestion
                   </button>
-                  <Link to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} className="text-sm text-violet-600 hover:underline font-medium">
+                  <Link to={`/login?returnTo=${encodeURIComponent(location.pathname + location.search)}`} rel="nofollow" className="text-sm text-violet-600 hover:underline font-medium">
                     Sign in to use
                   </Link>
                 </div>
