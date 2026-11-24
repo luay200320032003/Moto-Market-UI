@@ -110,7 +110,7 @@ export default function Home({ initialMotorcycles }: HomeProps = {}) {
         >
           <h2 className="text-3xl font-bold mb-4">Ready to Sell Your Motorcycle?</h2>
           <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            Join thousands of sellers who trust MotoTrade to connect with serious buyers
+            Join thousands of sellers who trust Motos Marketplace to connect with serious buyers.
           </p>
           <Link to={createPageUrl("Sell")}>
             <Button size="lg" className="bg-red-600 hover:bg-red-700 text-lg px-8 py-3 ring-2 ring-red-600 ring-offset-4 ring-offset-gray-900 transition-all hover:ring-red-500">
