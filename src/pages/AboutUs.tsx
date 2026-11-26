@@ -17,7 +17,7 @@ const VALUES = [
   {
     icon: Users,
     title: "Built for everyone",
-    body: "Whether you're an individual selling your first bike or a dealership managing hundreds of listings, Moto Markets works for you.",
+    body: "Whether you're an individual selling your first bike or a dealership managing hundreds of listings, Motos Marketplace works for you.",
   },
 ];
 
@@ -28,7 +28,7 @@ export default function AboutUs() {
       {/* Hero */}
       <div className="bg-gradient-to-r from-red-600 to-red-700 py-16 text-center text-white">
         <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold sm:text-4xl">About Moto Markets</h1>
+          <h1 className="text-3xl font-bold sm:text-4xl">About Motos Marketplace</h1>
           <p className="mx-auto mt-3 max-w-lg text-sm text-red-100 sm:text-base">
             A motorcycle marketplace built to make buying and selling bikes simpler, safer, and a little smarter.
           </p>
@@ -39,13 +39,13 @@ export default function AboutUs() {
         <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:p-10">
           <h2 className="text-xl font-semibold text-gray-900">Our story</h2>
           <p className="mt-3 text-sm leading-relaxed text-gray-700">
-            Moto Markets started with a simple frustration: buying and selling motorcycles online was scattered
-            across too many places, with too little trust and too much guesswork. We built Moto Markets to bring
+            Motos Marketplace started with a simple frustration: buying and selling motorcycles online was scattered
+            across too many places, with too little trust and too much guesswork. We built Motos Marketplace to bring
             it all into one place — real dealer inventory, individual listings, and the tools to actually make a
             confident decision, whether you're buying your first bike or selling your tenth.
           </p>
           <p className="mt-3 text-sm leading-relaxed text-gray-700">
-            Today, Moto Markets combines thousands of dealer listings with a growing community of individual
+            Today, Motos Marketplace combines thousands of dealer listings with a growing community of individual
             sellers, backed by VIN verification, AI-assisted pricing and descriptions, and a straightforward
             listing process — so you can spend less time searching and more time riding.
           </p>
