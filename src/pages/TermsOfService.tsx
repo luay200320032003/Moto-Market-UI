@@ -14,13 +14,13 @@ export default function TermsOfService() {
 
           <p className="mt-6 text-sm leading-relaxed text-gray-700">
             These Terms of Service ("Terms") govern your use of motosmarketplace.com (the "Site"), operated by
-            Moto Markets ("we," "us," or "our"). By accessing or using the Site, you agree to these Terms. If you
+            Motos Marketplace ("we," "us," or "our"). By accessing or using the Site, you agree to these Terms. If you
             do not agree, please do not use the Site.
           </p>
 
           <h2 className="mt-8 mb-3 text-xl font-semibold text-gray-900">1. What We Do</h2>
           <p className="text-sm leading-relaxed text-gray-700">
-            Moto Markets is a marketplace that lists motorcycles from third-party dealers and individual sellers.
+            Motos Marketplace is a marketplace that lists motorcycles from third-party dealers and individual sellers.
             We are not a party to any transaction between a buyer and a seller, and we do not own, inspect, or
             guarantee any motorcycle listed on the Site. Any purchase, sale, or agreement you make with a dealer
             or another user is solely between you and that party.
@@ -78,7 +78,7 @@ export default function TermsOfService() {
 
           <h2 className="mt-8 mb-3 text-xl font-semibold text-gray-900">8. Limitation of Liability</h2>
           <p className="text-sm leading-relaxed text-gray-700">
-            To the fullest extent permitted by law, Moto Markets is not liable for any indirect, incidental, or
+            To the fullest extent permitted by law, Motos Marketplace is not liable for any indirect, incidental, or
             consequential damages arising from your use of the Site, or from any transaction, dispute, or
             interaction with another user or dealer.
           </p>

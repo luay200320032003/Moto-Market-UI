@@ -175,7 +175,7 @@ const isActive = (pageName: string): boolean => {
               <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-red-700 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">M</span>
               </div>
-              <span className="text-2xl font-bold text-gray-900">Moto Markets</span>
+              <span className="text-2xl font-bold text-gray-900">Motos Marketplace</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -434,7 +434,7 @@ const isActive = (pageName: string): boolean => {
       {/* Footer */}
       <footer className="border-t border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-500">
-          <span>&copy; {new Date().getFullYear()} Moto Markets. All rights reserved.</span>
+          <span>&copy; {new Date().getFullYear()} Motos Marketplace. All rights reserved.</span>
           <div className="flex items-center gap-5">
             <Link to="/about-us" className="hover:text-gray-700 transition-colors">About Us</Link>
             <Link to="/privacy-policy" className="hover:text-gray-700 transition-colors">Privacy Policy</Link>
