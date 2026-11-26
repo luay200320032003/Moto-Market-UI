@@ -1,15 +1,16 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const brands = [
   { name: 'Harley-Davidson', logo: 'https://cdn.worldvectorlogo.com/logos/harley-davidson-1.svg' },
   { name: 'Honda', logo: 'https://cdn.worldvectorlogo.com/logos/honda-9.svg' },
   { name: 'Yamaha', logo: 'https://cdn.worldvectorlogo.com/logos/yamaha-2-1.svg' },
-  { name: 'Kawasaki', logo: 'https://cdn.worldvectorlogo.com/logos/kawasaki-1-1.svg' },
-  { name: 'Suzuki', logo: 'https://cdn.worldvectorlogo.com/logos/suzuki-8.svg' },
+  { name: 'Kawasaki', logo: 'https://cdn.worldvectorlogo.com/logos/kawasaki.svg' },
+  { name: 'Suzuki', logo: 'https://cdn.worldvectorlogo.com/logos/suzuki.svg' },
   { name: 'BMW', logo: 'https://cdn.worldvectorlogo.com/logos/bmw-2.svg' },
-  { name: 'Ducati', logo: 'https://cdn.worldvectorlogo.com/logos/ducati-6.svg' },
-  { name: 'Indian', logo: 'https://cdn.worldvectorlogo.com/logos/indian-motorcycle-1-1.svg' }
+  { name: 'Ducati', logo: 'https://cdn.worldvectorlogo.com/logos/ducati.svg' },
+  { name: 'Indian', logo: 'https://cdn.worldvectorlogo.com/logos/indian-motorcycles.svg' }
 ];
 
 export default function BrowseByBrand() {
@@ -27,9 +28,14 @@ export default function BrowseByBrand() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="flex items-center justify-center p-4 bg-gray-800 rounded-lg grayscale hover:grayscale-0 hover:bg-white transition-all duration-300"
             >
-              <img src={brand.logo} alt={brand.name} className="h-10 w-auto" />
+              <Link
+                to={`/Browse?make=${encodeURIComponent(brand.name)}`}
+                aria-label={`Browse ${brand.name} motorcycles`}
+                className="flex items-center justify-center p-4 bg-gray-800 rounded-lg grayscale hover:grayscale-0 hover:bg-white transition-all duration-300"
+              >
+                <img src={brand.logo} alt={brand.name} className="h-10 w-auto" />
+              </Link>
             </motion.div>
           ))}
         </div>
