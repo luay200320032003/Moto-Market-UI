@@ -39,7 +39,9 @@ export default function Browse() {
     () => new URLSearchParams(location.search).get("search") ?? ""
   );
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
-  const [selectedMake, setSelectedMake] = useState("all");
+  const [selectedMake, setSelectedMake] = useState(
+    () => new URLSearchParams(location.search).get("make") ?? "all"
+  );
   const [selectedCategory, setSelectedCategory] = useState("any");
   const [selectedCondition, setSelectedCondition] = useState("any");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
